@@ -16,16 +16,16 @@ import YoutubeToMp3 from "./pages/seo/YoutubeToMp3.tsx";
 import InstagramStoriesDownloader from "./pages/seo/InstagramStoriesDownloader.tsx";
 
 // New SEO pages
-import InstagramToMp4 from "./pages/seo/InstagramToMp4.tsx";
-import DownloadYoutubeVideoOnline from "./pages/seo/DownloadYoutubeVideoOnline.tsx";
-import SaveInstagramVideo from "./pages/seo/SaveInstagramVideo.tsx";
-import YoutubeHdDownloader from "./pages/seo/YoutubeHdDownloader.tsx";
-import FreeVideoDownloader from "./pages/seo/FreeVideoDownloader.tsx";
-import DownloadReelsWithoutWatermark from "./pages/seo/DownloadReelsWithoutWatermark.tsx";
-import YoutubeShortDownloader from "./pages/seo/YoutubeShortDownloader.tsx";
-import OnlineVideoDownloader from "./pages/seo/OnlineVideoDownloader.tsx";
-import InstagramReelDownloadHd from "./pages/seo/InstagramReelDownloadHd.tsx";
-import HowToDownloadInstagramReels from "./pages/seo/HowToDownloadInstagramReels.tsx";
+import InstagramToMp4 from "./pages/seo/instagram-to-mp4.tsx";
+import DownloadYoutubeVideoOnline from "./pages/seo/download-youtube-video-online.tsx";
+import SaveInstagramVideo from "./pages/seo/save-instagram-video.tsx";
+import YoutubeHdDownloader from "./pages/seo/youtube-hd-downloader.tsx";
+import FreeVideoDownloader from "./pages/seo/free-video-downloader.tsx";
+import DownloadReelsWithoutWatermark from "./pages/seo/Downloadreelswithoutwatermark.tsx";
+import YoutubeShortDownloader from "./pages/seo/youtube-shorts-downloader.tsx";
+import OnlineVideoDownloader from "./pages/seo/online-video-downloader.tsx";
+import InstagramReelDownloadHd from "./pages/seo/InstagramReelsDownloader.tsx";
+import HowToDownloadInstagramReels from "./pages/seo/how-to-download-instagram-reels.tsx";
 
 const queryClient = new QueryClient();
 
