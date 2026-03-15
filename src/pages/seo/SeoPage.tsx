@@ -166,7 +166,7 @@ export default function SeoPage({
 
       {/* Related pages */}
       <section style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px 60px" }}>
-        <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: "1.1rem", fontWeight: 700, marginBottom: 16, color: "rgba(245,240,255,0.5)", letterSpacing: "0.1em", textTransform: "uppercase", fontSize: "0.72rem" }}>
+        <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 16, color: "rgba(245,240,255,0.5)", letterSpacing: "0.1em", textTransform: "uppercase", fontSize: "0.72rem" }}>
           More Downloader Tools
         </h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
