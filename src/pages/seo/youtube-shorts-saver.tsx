@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -48,6 +49,14 @@ export default function YoutubeShortsSaver() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#050505", color: "#ffffff", fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <Helmet>
+        <title>YouTube Shorts Downloader — Save Shorts as MP4 Free | ReelVideoDownloader</title>
+        <meta name="description" content="Download any YouTube Short as an MP4 file. Vertical format preserved, no watermark, no login. Free and instant on any device." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/youtube-shorts-saver" />
+        <meta property="og:title" content="YouTube Shorts Downloader — Save Shorts as MP4 Free" />
+        <meta property="og:description" content="Download YouTube Shorts as MP4. Vertical format, no watermark, completely free." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
 
       {/* Bold color accent bar at top */}
       <div style={{ height: "4px", background: "linear-gradient(90deg, #FF0000, #FF4444, #FF0000)", backgroundSize: "200% 100%", animation: "slideGrad 2s linear infinite" }} />

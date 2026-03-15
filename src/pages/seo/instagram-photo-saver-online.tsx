@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -57,6 +58,14 @@ export default function InstagramPhotoSaver() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#fafaf8", color: "#1a1a2e", fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <Helmet>
+        <title>Instagram Photo Downloader — Save Photos in Original Quality Free | ReelVideoDownloader</title>
+        <meta name="description" content="Download Instagram photos, carousel images and profile pictures in original resolution. Free, no account needed, works on all devices including iPhone and Android." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/instagram-photo-saver" />
+        <meta property="og:title" content="Instagram Photo Downloader — Original Quality, Free" />
+        <meta property="og:description" content="Save Instagram photos and carousel images in full resolution. Free, instant, no login required." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
       {/* Subtle warm gradient */}
       <div style={{ position: "fixed", top: 0, right: 0, width: "50vw", height: "50vh", background: "radial-gradient(ellipse, rgba(252,175,69,0.07) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
       <div style={{ position: "fixed", bottom: 0, left: 0, width: "40vw", height: "40vh", background: "radial-gradient(ellipse, rgba(225,48,108,0.06) 0%, transparent 70%)", pointerEvents: "none", zIndex: 0 }} />

@@ -41,7 +41,7 @@ import InstagramVideoToMp4 from "./pages/seo/instagram-video-to-mp4.tsx";
 
 // New SEO pages (batch 3)
 import YoutubeChannelDownloader from "./pages/seo/youtube-channel-downloader.tsx";
-import InstagramHighlightsDownloader from "./pages/seo/ instagram-highlights-downloader.tsx";
+import InstagramHighlightsDownloader from "./pages/seo/instagram-highlights-downloader.tsx";
 import YoutubeClipDownloader from "./pages/seo/youtube-clip-downloader.tsx";
 import InstagramCarouselDownloader from "./pages/seo/instagram-carousel-downloader.tsx";
 import YoutubeAudioDownloader from "./pages/seo/youtube-audio-downloader.tsx";
@@ -55,8 +55,8 @@ import InstagramSavedPostsDownloader from "./pages/seo/instagram-saved-posts-dow
 import InstagramReelDownloaderHdQuality from "./pages/seo/instagram-reel-downloader-hd-quality.tsx";
 import YoutubeToMp4ConverterHd from "./pages/seo/youtube-to-mp4-converter-hd.tsx";
 import SaveInstagramVideoOnline from "./pages/seo/save-instagram-video-online.tsx";
-import YoutubeToMp3FreeConverter from "./pages/seo/ youtube-to-mp3-free-converter.tsx";
-import InstagramStorySaverOnline from "./pages/seo/ instagram-story-saver-online.tsx";
+import YoutubeToMp3FreeConverter from "./pages/seo/youtube-to-mp3-free-converter.tsx";
+import InstagramStorySaverOnline from "./pages/seo/instagram-story-saver-online.tsx";
 import YoutubeShortsSaver from "./pages/seo/youtube-shorts-saver.tsx";
 import InstagramPhotoSaverOnline from "./pages/seo/instagram-photo-saver-online.tsx";
 import YoutubePlaylistVideoDownloader from "./pages/seo/youtube-playlist-video-downloader.tsx";

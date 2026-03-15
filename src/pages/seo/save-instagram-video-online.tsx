@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -48,6 +49,14 @@ export default function SaveInstagramVideoOnline() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#0d0810", color: "#faf5ff", fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <Helmet>
+        <title>Save Instagram Video Online — Free, Fast, No Login | ReelVideoDownloader</title>
+        <meta name="description" content="Save any Instagram video online for free — Reels, feed videos, Stories and IGTV. No app needed, works on iPhone, Android and desktop." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/save-instagram-video-online" />
+        <meta property="og:title" content="Save Instagram Video Online — Free & Fast" />
+        <meta property="og:description" content="Download any Instagram video to your device instantly. Free, no account required." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
       {/* Diagonal accent */}
       <div style={{ position: "fixed", top: 0, right: 0, width: "50vw", height: "100vh", background: "linear-gradient(225deg, rgba(252,175,69,0.06) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />
       <div style={{ position: "fixed", bottom: 0, left: 0, width: "40vw", height: "60vh", background: "linear-gradient(45deg, rgba(225,48,108,0.07) 0%, transparent 60%)", pointerEvents: "none", zIndex: 0 }} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -48,6 +49,14 @@ export default function InstagramStoryDownloader() {
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(160deg, #0f0618 0%, #150b22 50%, #0d0a1a 100%)", color: "#f5eeff", fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <Helmet>
+        <title>Instagram Story Downloader — Save Stories & Highlights Free | ReelVideoDownloader</title>
+        <meta name="description" content="Download Instagram Stories and Highlights before they disappear. Save video and photo stories from any public account. Free, anonymous, no login." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/instagram-story-saver" />
+        <meta property="og:title" content="Instagram Story Downloader — Free & Anonymous" />
+        <meta property="og:description" content="Save Instagram Stories and Highlights from any public account. Free, instant, no account needed." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
 
       {/* Soft aurora blobs */}
       <div style={{ position: "fixed", top: "10%", left: "5%", width: "400px", height: "400px", borderRadius: "50%", background: "radial-gradient(circle, rgba(252,175,69,0.08), transparent 70%)", filter: "blur(60px)", pointerEvents: "none", zIndex: 0 }} />

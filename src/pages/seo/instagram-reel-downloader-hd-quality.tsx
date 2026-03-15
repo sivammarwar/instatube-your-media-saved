@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -64,6 +65,14 @@ export default function InstagramReelDownloaderHDQuality() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#080010", color: "#f0eaff", fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <Helmet>
+        <title>Instagram Reel Downloader HD Quality — Free 1080p | ReelVideoDownloader</title>
+        <meta name="description" content="Download Instagram Reels in full 1080p HD quality with no watermark, no login required. Free, fast, and works on all devices." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/instagram-reel-downloader-hd-quality" />
+        <meta property="og:title" content="Instagram Reel Downloader HD Quality — Free 1080p" />
+        <meta property="og:description" content="Save any Instagram Reel in 1080p HD. No watermark, no account needed. Free forever." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
       {/* Noise texture overlay */}
       <div style={{ position: "fixed", inset: 0, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E\")", zIndex: 0, pointerEvents: "none", opacity: 0.6 }} />
 

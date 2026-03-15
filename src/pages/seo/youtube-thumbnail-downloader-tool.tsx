@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -57,6 +58,14 @@ export default function YoutubeThumbnailDownloaderTool() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#03050a", color: "#dde8ff", fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <Helmet>
+        <title>YouTube Thumbnail Downloader — All Sizes Up to HD Free | ReelVideoDownloader</title>
+        <meta name="description" content="Download YouTube video thumbnails in all sizes up to 1280×720 HD. Get JPEG thumbnail images from any public YouTube video instantly. Free, no login needed." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/youtube-thumbnail-downloader-tool" />
+        <meta property="og:title" content="YouTube Thumbnail Downloader — HD, All Sizes, Free" />
+        <meta property="og:description" content="Save YouTube thumbnails in every available size up to 1280×720. Instant JPEG download, completely free." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
 
       {/* Background grid + glow */}
       <div style={{ position: "fixed", inset: 0, backgroundImage: "linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)", backgroundSize: "60px 60px", zIndex: 0, pointerEvents: "none" }} />

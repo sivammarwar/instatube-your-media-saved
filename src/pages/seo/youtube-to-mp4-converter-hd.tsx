@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -50,6 +51,14 @@ export default function YoutubeToMp4Converter() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#020509", color: "#e8f4ff", fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <Helmet>
+        <title>YouTube to MP4 Converter HD — Free Online | ReelVideoDownloader</title>
+        <meta name="description" content="Convert any YouTube video to MP4 in HD quality — up to 4K. Free online converter, no software needed, no account required." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/youtube-to-mp4-converter-hd" />
+        <meta property="og:title" content="YouTube to MP4 Converter HD — Free Online" />
+        <meta property="og:description" content="Convert YouTube videos to MP4 up to 4K quality. Free, fast, no login." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
       {/* Grid bg */}
       <div style={{ position: "fixed", inset: 0, backgroundImage: "linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px)", backgroundSize: "48px 48px", zIndex: 0, pointerEvents: "none" }} />
       <div style={{ position: "fixed", top: 0, left: "50%", transform: "translateX(-50%)", width: "800px", height: "400px", background: "radial-gradient(ellipse, rgba(255,0,0,0.12) 0%, transparent 70%)", zIndex: 0, pointerEvents: "none" }} />

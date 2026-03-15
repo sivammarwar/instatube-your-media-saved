@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -49,6 +50,14 @@ export default function YoutubeToMp3Free() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#06040f", color: "#e9e4ff", fontFamily: "'DM Mono', 'Courier New', monospace", overflowX: "hidden" }}>
+      <Helmet>
+        <title>YouTube to MP3 Converter Free — Up to 320kbps | ReelVideoDownloader</title>
+        <meta name="description" content="Convert YouTube videos to MP3 for free. Choose up to 320kbps audio quality. No account, no limits, works on mobile and desktop." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/youtube-to-mp3-free" />
+        <meta property="og:title" content="YouTube to MP3 Converter — Free, Up to 320kbps" />
+        <meta property="og:description" content="Free YouTube MP3 converter. Extract audio from any YouTube video in high quality." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
       {/* Scan lines */}
       <div style={{ position: "fixed", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(167,139,250,0.015) 2px, rgba(167,139,250,0.015) 4px)", zIndex: 0, pointerEvents: "none" }} />
       {/* Glow center */}

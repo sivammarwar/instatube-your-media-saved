@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -49,6 +50,14 @@ export default function YoutubePlaylistVideoDownloader() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#030712", color: "#e2e8f0", fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <Helmet>
+        <title>YouTube Playlist Downloader — Download Videos from Playlists Free | ReelVideoDownloader</title>
+        <meta name="description" content="Download any individual video from a YouTube playlist in HD quality. Supports MP4 video and MP3 audio. Free, no login required, works on all devices." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/youtube-playlist-video-downloader" />
+        <meta property="og:title" content="YouTube Playlist Downloader — Free HD Video Download" />
+        <meta property="og:description" content="Download videos from any YouTube playlist in HD. MP4 and MP3 supported. Free, no account needed." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
 
       {/* Geometric background */}
       <div style={{ position: "fixed", inset: 0, backgroundImage: "radial-gradient(rgba(255,0,0,0.06) 1px, transparent 1px)", backgroundSize: "32px 32px", zIndex: 0, pointerEvents: "none" }} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { motion } from "framer-motion";
 import InputStage, { type Platform } from "@/components/InputStage";
 import { fetchVideoData, type VideoData } from "@/lib/api";
@@ -57,6 +58,14 @@ export default function InstagramReelAudioExtractor() {
 
   return (
     <div style={{ minHeight: "100vh", background: "linear-gradient(180deg, #04020c 0%, #080414 100%)", color: "#f0e8ff", fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <Helmet>
+        <title>Instagram Reel to MP3 — Extract Audio from Reels Free | ReelVideoDownloader</title>
+        <meta name="description" content="Extract and download MP3 audio from any Instagram Reel. Save background music, voiceovers and sound effects as audio files. Free, instant, no login." />
+        <link rel="canonical" href="https://www.reelvideodownloader.com/instagram-reel-audio-extractor" />
+        <meta property="og:title" content="Instagram Reel to MP3 — Free Audio Extractor" />
+        <meta property="og:description" content="Convert Instagram Reels to MP3 audio. Extract any Reel's soundtrack for free, instantly." />
+        <meta name="robots" content="index, follow" />
+      </Helmet>
 
       {/* Purple glow */}
       <div style={{ position: "fixed", top: "20%", left: "50%", transform: "translateX(-50%)", width: "500px", height: "300px", background: "radial-gradient(ellipse, rgba(167,139,250,0.12) 0%, transparent 70%)", zIndex: 0, pointerEvents: "none" }} />
