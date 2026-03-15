@@ -1,0 +1,21 @@
+{
+  "name": "FreeReelsDownloader — Download Instagram Reels & YouTube Videos",
+  "short_name": "FreeReelsDL",
+  "description": "Download Instagram Reels and YouTube videos instantly. Free, fast, no login, no watermark.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060810",
+  "theme_color": "#060810",
+  "icons": [
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
