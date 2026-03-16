@@ -9,8 +9,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <!-- ── Async font load — does NOT block rendering ── -->
+    <!-- FIX: display=optional instead of display=swap -->
+    <!-- display=optional tells browser: use custom font only if it loads instantly -->
+    <!-- otherwise use system font permanently — eliminates CLS from font swap -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=optional"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
@@ -18,7 +21,7 @@
     <!-- Fallback for JS-disabled browsers -->
     <noscript>
       <link
-        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=optional"
         rel="stylesheet"
       />
     </noscript>
