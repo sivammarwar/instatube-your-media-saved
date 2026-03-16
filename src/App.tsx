@@ -63,6 +63,14 @@ import YoutubePlaylistVideoDownloader from "./pages/seo/youtube-playlist-video-d
 import InstagramReelAudioExtractor from "./pages/seo/instagram-reel-audio-extractor.tsx";
 import YoutubeThumbnailDownloaderTool from "./pages/seo/youtube-thumbnail-downloader-tool.tsx";
 
+// New SEO pages (batch 5)
+import InstagramReelDownloaderHD from "./pages/seo/InstagramReelDownloaderHD.tsx";
+import YouTubeToMP4ConverterHD from "./pages/seo/YouTubeToMP4ConverterHD.tsx";
+import YouTubeToMP3Free from "./pages/seo/YouTubeToMP3Free.tsx";
+import InstagramStorySaver from "./pages/seo/InstagramStorySaver.tsx";
+import YouTubeShortsSaverPage from "./pages/seo/YouTubeShortsSaver.tsx";
+import InstagramPhotoSaver from "./pages/seo/InstagramPhotoSaver.tsx";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -129,6 +137,14 @@ const App = () => (
           <Route path="/youtube-playlist-video-downloader" element={<YoutubePlaylistVideoDownloader />} />
           <Route path="/instagram-reel-audio-extractor" element={<InstagramReelAudioExtractor />} />
           <Route path="/youtube-thumbnail-downloader-tool" element={<YoutubeThumbnailDownloaderTool />} />
+
+          {/* New SEO pages (batch 5) */}
+          <Route path="/instagram-reel-downloader-hd" element={<InstagramReelDownloaderHD />} />
+          <Route path="/youtube-to-mp4-hd" element={<YouTubeToMP4ConverterHD />} />
+          <Route path="/youtube-mp3-free" element={<YouTubeToMP3Free />} />
+          <Route path="/instagram-story-saver-free" element={<InstagramStorySaver />} />
+          <Route path="/youtube-shorts-save" element={<YouTubeShortsSaverPage />} />
+          <Route path="/instagram-photo-save" element={<InstagramPhotoSaver />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
