@@ -6,7 +6,62 @@ import { fetchVideoData, type VideoData } from "@/lib/api";
 import { toast } from "sonner";
 
 type AppState = "idle" | "loading" | "results";
-const transition = { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const };
+
+/* ── FAQ Schema — injected into <head> for Google rich snippets ── */
+const FAQ_SCHEMA = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I download Instagram Reels for free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Copy the Instagram Reel URL, paste it into the FreeReelsDownloader input box, and click Fetch. Your download links will appear instantly. No login or account required."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I download YouTube videos online?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Copy the YouTube video URL, paste it into our free YouTube video downloader, and choose your preferred quality (up to 4K). The download starts immediately with no watermark."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is this Instagram and YouTube video downloader free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, FreeReelsDownloader is completely free to use. There are no hidden charges, no subscription, and no login required."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What video formats and qualities are supported?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We support MP4 video downloads up to 4K quality and MP3 audio extraction for YouTube videos. For Instagram, we support Reels, Stories, Posts, and IGTV in HD quality."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I download Instagram Reels without watermark?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, all Instagram Reels downloaded through FreeReelsDownloader are watermark-free. The video is saved exactly as the original public post."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is it safe to use this video downloader?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. We do not store any video data or personal information on our servers. All downloads stream directly to your device. We also do not require any account or login."
+      }
+    }
+  ]
+};
 
 /* ── Particle canvas ── */
 function ParticleCanvas() {
@@ -45,7 +100,6 @@ function ParticleCanvas() {
         if (p.x > canvas.width)  p.x = 0;
         if (p.y < 0) p.y = canvas.height;
         if (p.y > canvas.height) p.y = 0;
-
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
@@ -53,8 +107,6 @@ function ParticleCanvas() {
         ctx.fill();
       });
       ctx.globalAlpha = 1;
-
-      // Draw faint connection lines
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
@@ -72,7 +124,6 @@ function ParticleCanvas() {
           }
         }
       }
-
       animId = requestAnimationFrame(draw);
     };
     draw();
@@ -91,7 +142,6 @@ function useTilt(ref: React.RefObject<HTMLDivElement>) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-
     const onMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
@@ -100,20 +150,16 @@ function useTilt(ref: React.RefObject<HTMLDivElement>) {
       const dy = (e.clientY - cy) / (rect.height / 2);
       el.style.transform = `perspective(1000px) rotateY(${dx * 4}deg) rotateX(${-dy * 4}deg)`;
     };
-
     const onLeave = () => {
       el.style.transform = "perspective(1000px) rotateY(0deg) rotateX(0deg)";
       el.style.transition = "transform 0.6s cubic-bezier(0.16,1,0.3,1)";
     };
-
     const onEnter = () => {
       el.style.transition = "transform 0.1s ease-out";
     };
-
     el.addEventListener("mousemove", onMove);
     el.addEventListener("mouseleave", onLeave);
     el.addEventListener("mouseenter", onEnter);
-
     return () => {
       el.removeEventListener("mousemove", onMove);
       el.removeEventListener("mouseleave", onLeave);
@@ -131,6 +177,21 @@ export default function Index() {
 
   useTilt(cardRef);
 
+  // Inject FAQ schema into document head
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.text = JSON.stringify(FAQ_SCHEMA);
+    script.id = "faq-schema";
+    if (!document.getElementById("faq-schema")) {
+      document.head.appendChild(script);
+    }
+    return () => {
+      const existing = document.getElementById("faq-schema");
+      if (existing) document.head.removeChild(existing);
+    };
+  }, []);
+
   const handleSubmit = async (url: string, detectedPlatform: Platform) => {
     setError(null);
     if (!detectedPlatform) {
@@ -140,7 +201,6 @@ export default function Index() {
     setPlatform(detectedPlatform);
     setAppState("loading");
     setVideoData(null);
-
     try {
       const result = await fetchVideoData(url);
       if (!result.success || !result.data) {
@@ -183,12 +243,11 @@ export default function Index() {
       <div className="light-shaft shaft-3" />
 
       <main className="page-main">
-        {/* Header */}
+        {/* Header — H1 added for SEO */}
         <header className="header-area">
-          {/* 3D orb */}
           <div className="logo-orb">
             <div className="logo-orb-inner">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
@@ -196,8 +255,9 @@ export default function Index() {
             </div>
           </div>
 
-          <div className="logo-text">ReelVideoDownloader</div>
-          <div className="logo-sub">Video Downloader · v2.0</div>
+          {/* SEO: H1 with primary keyword — visible but styled to match design */}
+          <h1 className="logo-text">ReelVideoDownloader</h1>
+          <p className="logo-sub">Free Instagram &amp; YouTube Video Downloader · v2.0</p>
 
           <AnimatePresence mode="wait">
             <motion.p
@@ -208,8 +268,8 @@ export default function Index() {
               transition={{ duration: 0.22 }}
               className="header-tagline"
             >
-              {appState === "idle" && "Save any video from YouTube or Instagram. Free, fast, no login."}
-              {appState === "loading" && "Initializing download sequence…"}
+              {appState === "idle" && "Download Instagram Reels and YouTube videos free — no login, no watermark, up to 4K quality."}
+              {appState === "loading" && "Fetching your video download links…"}
               {appState === "results" && (videoData?.title || "Your video is ready to download.")}
             </motion.p>
           </AnimatePresence>
@@ -234,7 +294,7 @@ export default function Index() {
           </AnimatePresence>
         </header>
 
-        {/* 3D tilt card wrapping the input */}
+        {/* Input tool */}
         <div ref={cardRef} className="tilt-card fade-up fade-up-1">
           <InputStage
             onSubmit={handleSubmit}
@@ -262,6 +322,7 @@ export default function Index() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
             className="stats-bar"
+            aria-label="Key features"
           >
             <div className="stat-item">
               <span className="stat-value">100%</span>
@@ -286,22 +347,159 @@ export default function Index() {
         )}
       </main>
 
+      {/* ── HOW TO USE — SEO content section ── */}
+      <section className="seo-section" aria-labelledby="how-to-heading">
+        <div className="seo-inner">
+
+          {/* How to download Instagram Reels */}
+          <div className="seo-block">
+            <h2 id="how-to-heading" className="seo-heading">How to Download Instagram Reels Free</h2>
+            <p className="seo-desc">
+              Our free Instagram Reels downloader lets you save any public Reel in HD quality — no watermark, no account needed.
+            </p>
+            <ol className="seo-steps">
+              <li>
+                <span className="step-num">1</span>
+                <div>
+                  <strong>Copy the Instagram Reel link</strong>
+                  <p>Open Instagram, tap the three dots on any Reel, and select "Copy Link".</p>
+                </div>
+              </li>
+              <li>
+                <span className="step-num">2</span>
+                <div>
+                  <strong>Paste the link above</strong>
+                  <p>Click the Paste button or press Ctrl+V in the input field at the top of this page.</p>
+                </div>
+              </li>
+              <li>
+                <span className="step-num">3</span>
+                <div>
+                  <strong>Download your Reel</strong>
+                  <p>Choose your preferred quality and click Download. Your Instagram Reel saves instantly to your device.</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          {/* How to download YouTube videos */}
+          <div className="seo-block">
+            <h2 className="seo-heading">How to Download YouTube Videos Online</h2>
+            <p className="seo-desc">
+              Use our free YouTube video downloader to save any YouTube video in MP4 format up to 4K, or extract audio as MP3.
+            </p>
+            <ol className="seo-steps">
+              <li>
+                <span className="step-num">1</span>
+                <div>
+                  <strong>Copy the YouTube video URL</strong>
+                  <p>Go to YouTube, open the video, and copy the URL from your browser's address bar.</p>
+                </div>
+              </li>
+              <li>
+                <span className="step-num">2</span>
+                <div>
+                  <strong>Paste into the downloader</strong>
+                  <p>Paste the YouTube link into the input field above and click Fetch.</p>
+                </div>
+              </li>
+              <li>
+                <span className="step-num">3</span>
+                <div>
+                  <strong>Choose quality and download</strong>
+                  <p>Select from available resolutions (up to 4K) or download as MP3 audio. No login required.</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          {/* Supported formats */}
+          <div className="seo-block">
+            <h2 className="seo-heading">Supported Platforms &amp; Formats</h2>
+            <p className="seo-desc">
+              FreeReelsDownloader supports a wide range of content types across both Instagram and YouTube.
+            </p>
+            <div className="seo-formats-grid">
+              <div className="seo-format-card">
+                <div className="seo-format-title">📸 Instagram</div>
+                <ul>
+                  <li>Reels (HD, no watermark)</li>
+                  <li>Stories &amp; Highlights</li>
+                  <li>Posts &amp; Carousels</li>
+                  <li>IGTV Videos</li>
+                  <li>Profile Videos</li>
+                </ul>
+              </div>
+              <div className="seo-format-card">
+                <div className="seo-format-title">▶️ YouTube</div>
+                <ul>
+                  <li>Videos up to 4K quality</li>
+                  <li>YouTube Shorts</li>
+                  <li>MP3 Audio extraction</li>
+                  <li>HD &amp; Full HD (1080p)</li>
+                  <li>Playlist videos</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ Section */}
+          <div className="seo-block">
+            <h2 className="seo-heading">Frequently Asked Questions</h2>
+            <div className="seo-faq">
+
+              <details className="faq-item">
+                <summary className="faq-question">Is this Instagram and YouTube video downloader free?</summary>
+                <p className="faq-answer">Yes, FreeReelsDownloader is 100% free. No subscription, no hidden fees, no account required — ever.</p>
+              </details>
+
+              <details className="faq-item">
+                <summary className="faq-question">Can I download Instagram Reels without watermark?</summary>
+                <p className="faq-answer">Yes. All Instagram Reels downloaded through our tool are completely watermark-free. The video is saved exactly as the original public post.</p>
+              </details>
+
+              <details className="faq-item">
+                <summary className="faq-question">What YouTube video quality can I download?</summary>
+                <p className="faq-answer">Our YouTube video downloader supports resolutions up to 4K (2160p), including 1080p Full HD, 720p HD, and lower resolutions for smaller file sizes.</p>
+              </details>
+
+              <details className="faq-item">
+                <summary className="faq-question">Do I need to install any software or app?</summary>
+                <p className="faq-answer">No. FreeReelsDownloader works entirely in your browser. There is nothing to install — it works on iPhone, Android, PC, and Mac.</p>
+              </details>
+
+              <details className="faq-item">
+                <summary className="faq-question">Is my data safe when using this downloader?</summary>
+                <p className="faq-answer">Completely. We do not store any video content or personal information. Downloads stream directly to your device and we never log your activity.</p>
+              </details>
+
+              <details className="faq-item">
+                <summary className="faq-question">Can I download private Instagram videos?</summary>
+                <p className="faq-answer">No. Our tool only supports publicly accessible content. Private, restricted, or age-gated content cannot be downloaded.</p>
+              </details>
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* Legal Section */}
-      <section className="legal-section">
+      <section className="legal-section" aria-labelledby="legal-heading">
         <div className="legal-inner">
-          <h2 className="legal-title">
-            <span className="legal-title-icon">
+          <h2 id="legal-heading" className="legal-title">
+            <span className="legal-title-icon" aria-hidden="true">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
             </span>
-            Terms & Fair Use
+            Terms &amp; Fair Use
           </h2>
 
           <div className="legal-grid">
             <div className="legal-card legal-card-green">
               <div className="legal-card-title">Personal Use</div>
-              <p>InstaTube is intended for personal, non-commercial use only — such as saving public videos for offline viewing on your own device.</p>
+              <p>FreeReelsDownloader is intended for personal, non-commercial use only — such as saving public videos for offline viewing on your own device.</p>
             </div>
             <div className="legal-card legal-card-amber">
               <div className="legal-card-title">Respect Copyright</div>
@@ -318,18 +516,18 @@ export default function Index() {
           </div>
 
           <p className="legal-disclaimer">
-            <strong>Disclaimer:</strong> InstaTube is an independent tool not affiliated with, endorsed by, or connected to YouTube, Instagram, Meta, or Google in any way. Use of this tool is entirely at your own discretion and risk. By using InstaTube, you agree to comply with the <strong>YouTube Terms of Service</strong>, <strong>Instagram Terms of Use</strong>, and all applicable copyright laws in your jurisdiction. The developers of InstaTube accept no responsibility for any misuse of downloaded content. This tool is provided as-is for educational and personal convenience purposes only. Downloading copyrighted content without permission may violate platform terms and local laws — always ensure you have the legal right to download any content before doing so.
+            <strong>Disclaimer:</strong> FreeReelsDownloader is an independent tool not affiliated with, endorsed by, or connected to YouTube, Instagram, Meta, or Google in any way. Use of this tool is entirely at your own discretion and risk. By using FreeReelsDownloader, you agree to comply with the <strong>YouTube Terms of Service</strong>, <strong>Instagram Terms of Use</strong>, and all applicable copyright laws in your jurisdiction. The developers accept no responsibility for any misuse of downloaded content. Downloading copyrighted content without permission may violate platform terms and local laws — always ensure you have the legal right to download any content before doing so.
           </p>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="page-footer">
-        <span>© {new Date().getFullYear()} InstaTube</span>
+        <span>© {new Date().getFullYear()} FreeReelsDownloader</span>
         <span className="footer-sep" />
-        <span>Personal use only</span>
+        <span>Free Instagram &amp; YouTube Video Downloader</span>
         <span className="footer-sep" />
-        <span>Not affiliated with YouTube or Instagram</span>
+        <span>No login required</span>
         <span className="footer-sep" />
         <span>No data stored</span>
       </footer>
