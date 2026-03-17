@@ -14,11 +14,11 @@ interface DownloadState {
 interface ResultsAreaProps {
   platform: Platform;
   videoData: VideoData;
-  onDownload: (item: VideoResource & { type: "video" | "audio" }, label: string) => void;
+  onDownload?: (item: VideoResource & { type: "video" | "audio" }, label: string) => void;
   onReset: () => void;
   /** key = item.url → download state for that button */
   downloading?: Record<string, DownloadState | boolean>;
-  pageUrl?: string; // Original page URL for fallback downloads
+  pageUrl: string; // REQUIRED - Original page URL for downloads
 }
 
 const transition = { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const };
@@ -120,38 +120,88 @@ function ProgressBar({ progress, phase, isAudio }: ProgressBarProps) {
 
 // ── Main component ─────────────────────────────────────────────────────────
 const ResultsArea = ({
+  platform,
   videoData,
   onReset,
-  pageUrl = "",
+  pageUrl,
   downloading = {},
 }: ResultsAreaProps) => {
   const { videos, audios, thumbnail, title } = videoData;
   const [thumbError, setThumbError] = React.useState(false);
   const [thumbLoaded, setThumbLoaded] = React.useState(false);
-  const [downloadingState, setDownloadingState] = React.useState<Record<string, DownloadState>>(downloading || {});
+  // Each item gets a unique state key: type-quality-index
+  const [downloadingState, setDownloadingState] = React.useState<Record<string, DownloadState>>({});
 
-  const allItems: Array<VideoResource & { type: "video" | "audio" }> = [
-    ...videos.map(v => ({ ...v, type: "video" as const })),
-    ...audios.map(a => ({ ...a, type: "audio" as const })),
+  // Validate pageUrl on mount
+  React.useEffect(() => {
+    if (!pageUrl) {
+      console.warn('[ResultsArea] ⚠️  pageUrl is empty! Downloads will fail.');
+    } else {
+      console.log('[ResultsArea] ✅ pageUrl received:', pageUrl);
+    }
+  }, [pageUrl]);
+
+  // Create items with unique keys
+  const allItems: Array<VideoResource & { type: "video" | "audio"; _key: string; _index: number }> = [
+    ...videos.map((v, i) => ({ 
+      ...v, 
+      type: "video" as const, 
+      _key: `video-${v.quality || v.format || `format-${i}`}-${i}`,
+      _index: i
+    })),
+    ...audios.map((a, i) => ({ 
+      ...a, 
+      type: "audio" as const, 
+      _key: `audio-${a.quality || a.format || `format-${i}`}-${i}`,
+      _index: videos.length + i
+    })),
   ];
+
+  // Verify unique keys
+  React.useEffect(() => {
+    const keys = allItems.map(i => i._key);
+    const duplicates = keys.filter((k, idx) => keys.indexOf(k) !== idx);
+    if (duplicates.length > 0) {
+      console.error('[ResultsArea] ❌ Duplicate keys detected:', duplicates);
+    } else {
+      console.log('[ResultsArea] ✅ All item keys unique:', keys);
+    }
+  }, [allItems]);
 
   // Handle download with proper audio+video merge logic
   const handleDownload = React.useCallback(
-    async (item: VideoResource & { type: "video" | "audio" }, label: string) => {
-      const key = item.url;
+    async (item: VideoResource & { type: "video" | "audio"; _key: string }, label: string) => {
+      const key = item._key;
+      
+      console.log('[ResultsArea] 📥 Download started', {
+        key,
+        label,
+        type: item.type,
+        hasItemUrl: !!item.url,
+        hasPageUrl: !!pageUrl,
+        pageUrl: pageUrl || '(empty)'
+      });
+
+      if (!pageUrl) {
+        console.error('[ResultsArea] ❌ FATAL: pageUrl is empty!');
+        alert('Download failed: Page URL is missing. Please go back and try again.');
+        return;
+      }
       
       // Mark as loading
-      setDownloadingState(prev => ({
-        ...prev,
-        [key]: { loading: true, phase: "preparing", progress: undefined }
-      }));
+      setDownloadingState(prev => {
+        const newState = { ...prev };
+        newState[key] = { loading: true, phase: "preparing", progress: undefined };
+        console.log('[ResultsArea] State update:', { key, newState: newState[key] });
+        return newState;
+      });
 
       try {
         let result;
 
         if (item.type === "audio") {
-          // Audio: use direct download
-          console.log('[ResultsArea] Downloading audio:', label);
+          // Audio: use direct download via yt-dlp
+          console.log('[ResultsArea] 🎵 Downloading AUDIO via yt-dlp');
           result = await downloadDirect(pageUrl, title || "audio", undefined, "audio");
         } else {
           // Video: Try to find matching audio and use fast merge (Method A)
@@ -159,21 +209,22 @@ const ResultsArea = ({
 
           if (matchingAudio && item.url && matchingAudio.url) {
             // Has both video and audio → use fast merge (stream copy)
-            console.log('[ResultsArea] Downloading video+audio (fast merge):', label);
+            console.log('[ResultsArea] 🎬 Downloading VIDEO+AUDIO (fast merge method A)');
             setDownloadingState(prev => ({
               ...prev,
               [key]: { loading: true, phase: "merging", progress: undefined }
             }));
-            result = await downloadVideoWithAudio(item.url, matchingAudio.url, title || "video", "youtube");
+            result = await downloadVideoWithAudio(item.url, matchingAudio.url, title || "video", platform);
           } else {
             // Fallback: use yt-dlp direct download (handles muxing internally)
-            console.log('[ResultsArea] Downloading video via yt-dlp (fallback):', label);
+            console.log('[ResultsArea] 🎬 Downloading VIDEO via yt-dlp (method B - fallback)');
             const quality = item.quality?.replace('p', '') || undefined;
             result = await downloadDirect(pageUrl, title || "video", quality, "video");
           }
         }
 
         if (result.success) {
+          console.log('[ResultsArea] ✅ Download successful, showing saved state');
           // Mark as complete
           setDownloadingState(prev => ({
             ...prev,
@@ -189,7 +240,7 @@ const ResultsArea = ({
             });
           }, 2000);
         } else {
-          console.error('[ResultsArea] Download failed:', result.error);
+          console.error('[ResultsArea] ❌ Download failed:', result.error);
           setDownloadingState(prev => {
             const newState = { ...prev };
             delete newState[key];
@@ -198,19 +249,20 @@ const ResultsArea = ({
           alert(`Download failed: ${result.error || 'Unknown error'}`);
         }
       } catch (err) {
-        console.error('[ResultsArea] Download error:', err);
+        console.error('[ResultsArea] ❌ Download error:', err);
         setDownloadingState(prev => {
           const newState = { ...prev };
           delete newState[key];
           return newState;
         });
-        alert(`Download failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        alert(`Download failed: ${errorMsg}`);
       }
     },
-    [pageUrl, title, audios]
+    [pageUrl, title, audios, platform]
   );
 
-  // Normalise the downloading value for a given key to a DownloadState
+  // Get state for a specific item
   function getState(key: string): DownloadState {
     const raw = downloadingState[key];
     if (!raw) return { loading: false };
@@ -223,11 +275,23 @@ const ResultsArea = ({
   // Log thumbnail info for debugging
   React.useEffect(() => {
     if (thumbnail) {
-      console.log('[ResultsArea] Thumbnail URL:', thumbnail.slice(0, 100) + '...');
-      console.log('[ResultsArea] Thumbnail Error:', thumbError);
-      console.log('[ResultsArea] Thumbnail Loaded:', thumbLoaded);
+      console.log('[ResultsArea] 🖼️  Thumbnail:', {
+        url: thumbnail.slice(0, 80) + '...',
+        error: thumbError,
+        loaded: thumbLoaded
+      });
     }
   }, [thumbnail, thumbError, thumbLoaded]);
+
+  // Log state changes
+  React.useEffect(() => {
+    const loadingCount = Object.values(downloadingState).filter(s => s.loading).length;
+    console.log('[ResultsArea] 📊 Download state changed:', { 
+      loadingCount,
+      totalState: Object.keys(downloadingState).length,
+      state: downloadingState 
+    });
+  }, [downloadingState]);
 
   return (
     <motion.div
@@ -251,12 +315,11 @@ const ResultsArea = ({
             className="results-thumb-img"
             loading="lazy"
             onLoad={() => {
-              console.log('[ResultsArea] ✅ Thumbnail loaded successfully');
+              console.log('[ResultsArea] ✅ Thumbnail loaded');
               setThumbLoaded(true);
             }}
             onError={(e) => {
-              console.error('[ResultsArea] ❌ Thumbnail failed to load from URL:', thumbnail);
-              console.error('[ResultsArea] Error event:', e);
+              console.error('[ResultsArea] ❌ Thumbnail failed:', { url: thumbnail, error: e });
               setThumbError(true);
             }}
           />
@@ -280,9 +343,9 @@ const ResultsArea = ({
       {/* Format rows */}
       {allItems.length > 0 ? (
         <div className="results-list">
-          {allItems.map((item, i) => {
+          {allItems.map((item) => {
             const isAudio  = item.type === "audio";
-            const state    = getState(item.url);
+            const state    = getState(item._key);
             const isLoading = state.loading;
             const isDone   = !isLoading && state.phase === "saving";
 
@@ -293,10 +356,10 @@ const ResultsArea = ({
 
             return (
               <motion.div
-                key={`${item.type}-${item.quality}-${i}`}
+                key={item._key}
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ ...transition, delay: 0.08 + i * 0.06 }}
+                transition={{ ...transition, delay: 0.08 + item._index * 0.06 }}
                 className={`result-row ${isAudio ? "result-row-audio" : "result-row-video"} ${isLoading ? "result-row-loading" : ""}`}
               >
                 {/* Main clickable row */}
