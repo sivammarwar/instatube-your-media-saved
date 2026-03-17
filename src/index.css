@@ -653,6 +653,159 @@ h1.logo-text {
 .stat-divider { width: 1px; height: 28px; background: var(--border-subtle); }
 
 /* ============================================================
+   PROGRESS BAR — append these rules to your existing CSS file
+   (globals.css / styles.css)
+   ============================================================ */
+
+/* ── result-row layout change ────────────────────────────────────────────────
+   The row is now a flex column wrapper; the inner <button> handles click.
+   This lets the progress bar sit *below* the button row, still inside the card.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Override the original result-row to be a column container */
+.result-row {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+  cursor: default; /* cursor handled by inner button */
+}
+
+/* Inner button — takes over the original row appearance */
+.result-row-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  text-align: left;
+  gap: 8px;
+  border-radius: 14px;      /* matches outer card */
+  transition: background 0.2s;
+}
+
+.result-row-btn:disabled {
+  cursor: not-allowed;
+}
+
+.result-row:not(.result-row-loading):hover .result-row-btn {
+  background: rgba(255,255,255,0.03);
+}
+
+/* Focus ring on inner button */
+.result-row-btn:focus-visible {
+  outline: 2px solid rgba(225,48,108,0.7);
+  outline-offset: 2px;
+}
+
+/* ── Progress bar wrapper ──────────────────────────────────────────────────── */
+.dl-progress-wrap {
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dl-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dl-progress-phase {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.dl-progress-pct {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* ── Track ─────────────────────────────────────────────────────────────────── */
+.dl-progress-track {
+  position: relative;
+  height: 4px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden;
+}
+
+/* Determinate fill */
+.dl-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transform-origin: left center;
+}
+
+.dl-prog-video.dl-progress-fill {
+  background: linear-gradient(90deg, #FF0000, #CC0000);
+  box-shadow: 0 0 8px rgba(255,0,0,0.5);
+}
+
+.dl-prog-audio.dl-progress-fill {
+  background: linear-gradient(90deg, #833AB4, #E1306C);
+  box-shadow: 0 0 8px rgba(225,48,108,0.5);
+}
+
+/* Indeterminate sweep */
+.dl-progress-indeterminate {
+  position: absolute;
+  inset: 0;
+  border-radius: 99px;
+  background-size: 200% 100%;
+  animation: dlSweep 1.4s ease-in-out infinite;
+}
+
+.dl-prog-video.dl-progress-indeterminate {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,0,0,0.9) 40%,
+    rgba(255,80,0,0.9) 60%,
+    transparent 100%);
+}
+
+.dl-prog-audio.dl-progress-indeterminate {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(131,58,180,0.9) 40%,
+    rgba(225,48,108,0.9) 60%,
+    transparent 100%);
+}
+
+@keyframes dlSweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+/* ── Glow pulse on the track while active ─────────────────────────────────── */
+.result-row-loading .dl-progress-track {
+  animation: trackGlow 2s ease-in-out infinite alternate;
+}
+
+.result-row-video.result-row-loading .dl-progress-track {
+  box-shadow: 0 0 6px rgba(255,0,0,0.2);
+}
+
+.result-row-audio.result-row-loading .dl-progress-track {
+  box-shadow: 0 0 6px rgba(225,48,108,0.2);
+}
+
+@keyframes trackGlow {
+  from { opacity: 0.8; }
+  to   { opacity: 1; }
+}
+/* ============================================================
    SEO CONTENT SECTIONS
    ============================================================ */
 .seo-section {

@@ -13,12 +13,17 @@ import { toast } from "sonner";
 
 type AppState = "idle" | "loading" | "results";
 
-// We store the original page URL so downloadDirect can re-fetch with yt-dlp
-// This is the most reliable download path (no expired CDN URLs)
 type FetchedVideo = {
   pageUrl: string;
   data: VideoData;
 };
+
+// Per-button download state — passed to ResultsArea
+export interface DownloadState {
+  loading: boolean;
+  progress?: number;   // 0–100; undefined = indeterminate
+  phase?: "preparing" | "merging" | "saving";
+}
 
 const FAQ_SCHEMA = {
   "@context": "https://schema.org",
@@ -179,13 +184,69 @@ function useTilt(ref: React.RefObject<HTMLDivElement>) {
   }, [ref]);
 }
 
+// ── Progress simulation ──────────────────────────────────────────────────────
+// Since the backend streams a binary file with a known Content-Length we can
+// track real XHR progress. For /api/download-direct there is no streaming, so
+// we simulate progress instead. This hook wires both together cleanly.
+
+type ProgressUpdater = (state: Partial<DownloadState>) => void;
+
+/**
+ * Simulate indeterminate → determinate progress for a long-running task.
+ * Returns a cleanup function that stops the simulation.
+ *
+ * Phases:
+ *   0–20%  : "preparing" (fast, ~1 s)
+ *   20–80% : "merging"   (slow, ~duration ms)
+ *   80–99% : "saving"    (held until resolve)
+ *   100%   : set externally after the fetch resolves
+ */
+function simulateProgress(update: ProgressUpdater, durationMs = 25000): () => void {
+  let raf: number;
+  const start = Date.now();
+
+  const PHASES = [
+    { until: 20,  phase: "preparing" as const, speed: 20  },   // 0–20  in ~1 s
+    { until: 80,  phase: "merging"   as const, speed: 60  },   // 20–80 in ~durationMs
+    { until: 99,  phase: "saving"    as const, speed: 19  },   // 80–99 in ~1 s
+  ];
+
+  function tick() {
+    const elapsed = Date.now() - start;
+    // Map elapsed → progress using an eased curve
+    // 0–3 s = 0–20%, 3–(duration+3) s = 20–80%, then slow crawl to 99%
+    let pct: number;
+    let phase: DownloadState["phase"];
+
+    if (elapsed < 1000) {
+      pct   = (elapsed / 1000) * 20;
+      phase = "preparing";
+    } else if (elapsed < durationMs) {
+      pct   = 20 + ((elapsed - 1000) / (durationMs - 1000)) * 60;
+      phase = "merging";
+    } else {
+      // Crawl asymptotically toward 99
+      const extra = elapsed - durationMs;
+      pct   = Math.min(99, 80 + (extra / 3000) * 19);
+      phase = "saving";
+    }
+
+    update({ progress: Math.round(pct), phase });
+    raf = requestAnimationFrame(tick);
+  }
+
+  raf = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(raf);
+}
+
 export default function Index() {
   const [appState,  setAppState]  = useState<AppState>("idle");
   const [platform,  setPlatform]  = useState<Platform>(null);
   const [error,     setError]     = useState<string | null>(null);
   const [fetched,   setFetched]   = useState<FetchedVideo | null>(null);
 
-  const [downloading, setDownloading] = useState<Record<string, boolean>>({});
+  // Keyed by item.url — supports DownloadState for the progress bar
+  const [downloading, setDownloading] = useState<Record<string, DownloadState>>({});
 
   const cardRef = useRef<HTMLDivElement>(null);
   useTilt(cardRef);
@@ -218,7 +279,6 @@ export default function Index() {
         setAppState("idle");
         return;
       }
-      // ✅ Store the original page URL alongside the video data
       setFetched({ pageUrl: url, data: result.data });
       setAppState("results");
     } catch {
@@ -227,22 +287,24 @@ export default function Index() {
     }
   };
 
-  // ── The fixed download handler ──────────────────────────────────────────
-  // Receives the full item (with type, quality, url) from ResultsArea.
-  // For VIDEO: uses downloadDirect (yt-dlp handles merge server-side) with
-  //            downloadVideoWithAudio as fallback if direct fails.
-  // For AUDIO: uses downloadDirect with type="audio".
-  // ────────────────────────────────────────────────────────────────────────
+  // ── Download handler with progress tracking ──────────────────────────────
   const handleDownload = async (
     item: VideoResource & { type: "video" | "audio" },
     label: string,
   ) => {
-    const key = item.url; // stable key for this button's loading state
-    if (downloading[key]) return;
-
+    const key = item.url;
+    if (downloading[key]?.loading) return;
     if (!fetched) return;
 
-    setDownloading(prev => ({ ...prev, [key]: true }));
+    // Helper to patch state for this key only
+    const patchState = (patch: Partial<DownloadState>) =>
+      setDownloading(prev => ({
+        ...prev,
+        [key]: { ...(prev[key] ?? { loading: true }), ...patch },
+      }));
+
+    // Start — indeterminate until first progress tick
+    patchState({ loading: true, progress: undefined, phase: "preparing" });
 
     const title   = fetched.data.title || "video";
     const pageUrl = fetched.pageUrl;
@@ -259,46 +321,56 @@ export default function Index() {
     };
 
     toast.loading(
-      item.type === "video" ? "Merging video + audio on server…" : "Preparing audio…",
+      item.type === "video" ? "Preparing download…" : "Preparing audio…",
       { id: key, description: label, style: toastStyle },
     );
 
+    // Start progress simulation (25 s expected merge time; adjust if needed)
+    const stopProgress = simulateProgress(patchState, 25000);
+
     let result: { success: boolean; error?: string };
 
-    if (item.type === "audio") {
-      // ── Audio download ──────────────────────────────────────────────────
-      // downloadDirect asks yt-dlp to fetch best audio and encode to m4a
-      result = await downloadDirect(pageUrl, title, undefined, "audio");
+    try {
+      if (item.type === "audio") {
+        result = await downloadDirect(pageUrl, title, undefined, "audio");
+      } else {
+        const qualityHeight = item.quality?.replace(/[^0-9]/g, "") || undefined;
 
-    } else {
-      // ── Video download ──────────────────────────────────────────────────
-      // Extract height from quality string like "720p" → "720"
-      const qualityHeight = item.quality?.replace(/[^0-9]/g, "") || undefined;
+        // Method 1: yt-dlp re-fetches + merges server-side
+        result = await downloadDirect(pageUrl, title, qualityHeight, "video");
 
-      // Method 1 (preferred): yt-dlp re-fetches + merges server-side
-      // This avoids CDN URL expiry and guarantees audio is included
-      result = await downloadDirect(pageUrl, title, qualityHeight, "video");
+        // Method 2 fallback: pre-resolved CDN stream merge
+        if (!result.success && fetched.data.audios.length > 0) {
+          console.warn("[download] downloadDirect failed, falling back to stream merge:", result.error);
+          toast.loading("Retrying with stream merge…", { id: key, description: label, style: toastStyle });
+          patchState({ phase: "merging", progress: undefined });
 
-      // Method 2 (fallback): use the pre-resolved CDN URLs from /api/video-info
-      // Only used if downloadDirect fails (e.g. yt-dlp timeout on the server)
-      if (!result.success && fetched.data.audios.length > 0) {
-        console.warn("[download] downloadDirect failed, falling back to stream merge:", result.error);
-        toast.loading("Retrying with stream merge…", { id: key, description: label, style: toastStyle });
-
-        const bestAudio = fetched.data.audios[0]; // first audio is typically best quality
-        result = await downloadVideoWithAudio(item.url, bestAudio.url, title, platform ?? undefined);
+          const bestAudio = fetched.data.audios[0];
+          result = await downloadVideoWithAudio(item.url, bestAudio.url, title, platform ?? undefined);
+        }
       }
+    } finally {
+      stopProgress();
     }
 
-    setDownloading(prev => ({ ...prev, [key]: false }));
-
     if (result.success) {
+      // Jump to 100% briefly before clearing
+      patchState({ loading: false, progress: 100, phase: "saving" });
       toast.success("Download started", {
         id:          key,
         description: `Saving: ${title.slice(0, 40)}`,
         style:       toastStyle,
       });
+      // Clear progress after a short delay so the user sees the complete bar
+      setTimeout(() => {
+        setDownloading(prev => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+      }, 1800);
     } else {
+      patchState({ loading: false, progress: undefined, phase: undefined });
       toast.error("Download failed", {
         id:          key,
         description: result.error || "Please try again.",
