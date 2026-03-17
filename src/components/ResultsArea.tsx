@@ -9,6 +9,7 @@ interface DownloadState {
   /** 0–100, undefined = indeterminate */
   progress?: number;
   phase?: "preparing" | "merging" | "saving";
+  startedAt?: number; // timestamp when download started
 }
 
 interface ResultsAreaProps {
@@ -27,6 +28,20 @@ function formatSize(mb: number): string {
   if (!mb || mb === 0) return "";
   if (mb < 1) return `${(mb * 1024).toFixed(0)} KB`;
   return `${mb.toFixed(1)} MB`;
+}
+
+/** Estimate remaining time based on progress + elapsed */
+function estimateTimeRemaining(progress: number, startedAt: number): string {
+  if (!progress || progress <= 2) return "";
+  const elapsed = (Date.now() - startedAt) / 1000; // seconds
+  const rate = progress / elapsed; // % per second
+  const remaining = (100 - progress) / rate;
+  if (!isFinite(remaining) || remaining <= 0) return "";
+  if (remaining < 5) return "< 5s";
+  if (remaining < 60) return `~${Math.round(remaining)}s`;
+  const mins = Math.floor(remaining / 60);
+  const secs = Math.round(remaining % 60);
+  return `~${mins}m ${secs}s`;
 }
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -79,33 +94,36 @@ const PHASE_LABELS: Record<string, string> = {
 
 // ── Download Progress Bar ──────────────────────────────────────────────────
 interface ProgressBarProps {
-  progress?: number;        // 0–100; undefined = animated pulse
+  progress?: number;
   phase?: string;
   isAudio: boolean;
+  startedAt?: number;
 }
 
-function ProgressBar({ progress, phase, isAudio }: ProgressBarProps) {
+function ProgressBar({ progress, phase, isAudio, startedAt }: ProgressBarProps) {
   const isIndeterminate = progress === undefined;
   const pct = Math.min(100, Math.max(0, progress ?? 0));
   const phaseLabel = phase ? PHASE_LABELS[phase] ?? "Downloading…" : "Downloading…";
+  const eta = (!isIndeterminate && startedAt) ? estimateTimeRemaining(pct, startedAt) : "";
 
   return (
     <div className="dl-progress-wrap" aria-label={`Download progress: ${isIndeterminate ? phaseLabel : `${pct}%`}`}>
-      {/* Phase label + percentage */}
+      {/* Phase label + percentage + ETA */}
       <div className="dl-progress-header">
         <span className="dl-progress-phase">{phaseLabel}</span>
-        {!isIndeterminate && (
-          <span className="dl-progress-pct">{pct}%</span>
-        )}
+        <span className="dl-progress-right">
+          {eta && <span className="dl-progress-eta">{eta}</span>}
+          {!isIndeterminate && (
+            <span className="dl-progress-pct">{pct}%</span>
+          )}
+        </span>
       </div>
 
       {/* Track */}
       <div className="dl-progress-track" role="progressbar" aria-valuenow={isIndeterminate ? undefined : pct} aria-valuemin={0} aria-valuemax={100}>
         {isIndeterminate ? (
-          // Indeterminate — animated shimmer sweep
           <div className={`dl-progress-indeterminate ${isAudio ? "dl-prog-audio" : "dl-prog-video"}`} />
         ) : (
-          // Determinate — fills to pct%
           <motion.div
             className={`dl-progress-fill ${isAudio ? "dl-prog-audio" : "dl-prog-video"}`}
             initial={{ width: "0%" }}
@@ -129,10 +147,8 @@ const ResultsArea = ({
   const { videos, audios, thumbnail, title } = videoData;
   const [thumbError, setThumbError] = React.useState(false);
   const [thumbLoaded, setThumbLoaded] = React.useState(false);
-  // Each item gets a unique state key: type-quality-index
   const [downloadingState, setDownloadingState] = React.useState<Record<string, DownloadState>>({});
 
-  // Validate pageUrl on mount
   React.useEffect(() => {
     if (!pageUrl) {
       console.warn('[ResultsArea] ⚠️  pageUrl is empty! Downloads will fail.');
@@ -141,42 +157,35 @@ const ResultsArea = ({
     }
   }, [pageUrl]);
 
-  // Create items with unique keys
   const allItems: Array<VideoResource & { type: "video" | "audio"; _key: string; _index: number }> = [
-    ...videos.map((v, i) => ({ 
-      ...v, 
-      type: "video" as const, 
+    ...videos.map((v, i) => ({
+      ...v,
+      type: "video" as const,
       _key: `video-${v.quality || v.format || `format-${i}`}-${i}`,
       _index: i
     })),
-    ...audios.map((a, i) => ({ 
-      ...a, 
-      type: "audio" as const, 
+    ...audios.map((a, i) => ({
+      ...a,
+      type: "audio" as const,
       _key: `audio-${a.quality || a.format || `format-${i}`}-${i}`,
       _index: videos.length + i
     })),
   ];
 
-  // Verify unique keys
   React.useEffect(() => {
     const keys = allItems.map(i => i._key);
     const duplicates = keys.filter((k, idx) => keys.indexOf(k) !== idx);
     if (duplicates.length > 0) {
       console.error('[ResultsArea] ❌ Duplicate keys detected:', duplicates);
-    } else {
-      console.log('[ResultsArea] ✅ All item keys unique:', keys);
     }
   }, [allItems]);
 
-  // Handle download with proper audio+video merge logic
   const handleDownload = React.useCallback(
     async (item: VideoResource & { type: "video" | "audio"; _key: string }, label: string) => {
       const key = item._key;
-      
+
       console.log('[ResultsArea] 📥 Download started', {
-        key,
-        label,
-        type: item.type,
+        key, label, type: item.type,
         hasItemUrl: !!item.url,
         hasPageUrl: !!pageUrl,
         pageUrl: pageUrl || '(empty)'
@@ -187,36 +196,29 @@ const ResultsArea = ({
         alert('Download failed: Page URL is missing. Please go back and try again.');
         return;
       }
-      
-      // Mark as loading
-      setDownloadingState(prev => {
-        const newState = { ...prev };
-        newState[key] = { loading: true, phase: "preparing", progress: undefined };
-        console.log('[ResultsArea] State update:', { key, newState: newState[key] });
-        return newState;
-      });
+
+      setDownloadingState(prev => ({
+        ...prev,
+        [key]: { loading: true, phase: "preparing", progress: undefined, startedAt: Date.now() }
+      }));
 
       try {
         let result;
 
         if (item.type === "audio") {
-          // Audio: use direct download via yt-dlp
           console.log('[ResultsArea] 🎵 Downloading AUDIO via yt-dlp');
           result = await downloadDirect(pageUrl, title || "audio", undefined, "audio");
         } else {
-          // Video: Try to find matching audio and use fast merge (Method A)
           const matchingAudio = audios.length > 0 ? audios[0] : null;
 
           if (matchingAudio && item.url && matchingAudio.url) {
-            // Has both video and audio → use fast merge (stream copy)
             console.log('[ResultsArea] 🎬 Downloading VIDEO+AUDIO (fast merge method A)');
             setDownloadingState(prev => ({
               ...prev,
-              [key]: { loading: true, phase: "merging", progress: undefined }
+              [key]: { loading: true, phase: "merging", progress: undefined, startedAt: prev[key]?.startedAt ?? Date.now() }
             }));
             result = await downloadVideoWithAudio(item.url, matchingAudio.url, title || "video", platform);
           } else {
-            // Fallback: use yt-dlp direct download (handles muxing internally)
             console.log('[ResultsArea] 🎬 Downloading VIDEO via yt-dlp (method B - fallback)');
             const quality = item.quality?.replace('p', '') || undefined;
             result = await downloadDirect(pageUrl, title || "video", quality, "video");
@@ -224,14 +226,11 @@ const ResultsArea = ({
         }
 
         if (result.success) {
-          console.log('[ResultsArea] ✅ Download successful, showing saved state');
-          // Mark as complete
+          console.log('[ResultsArea] ✅ Download successful');
           setDownloadingState(prev => ({
             ...prev,
             [key]: { loading: false, phase: "saving", progress: 100 }
           }));
-          
-          // Keep success state for 2 seconds then clear
           setTimeout(() => {
             setDownloadingState(prev => {
               const newState = { ...prev };
@@ -262,17 +261,14 @@ const ResultsArea = ({
     [pageUrl, title, audios, platform]
   );
 
-  // Get state for a specific item
   function getState(key: string): DownloadState {
     const raw = downloadingState[key];
     if (!raw) return { loading: false };
     return raw;
   }
 
-  // Show thumbnail if available and not errored
   const shouldShowThumbnail = thumbnail && !thumbError;
 
-  // Log thumbnail info for debugging
   React.useEffect(() => {
     if (thumbnail) {
       console.log('[ResultsArea] 🖼️  Thumbnail:', {
@@ -282,16 +278,6 @@ const ResultsArea = ({
       });
     }
   }, [thumbnail, thumbError, thumbLoaded]);
-
-  // Log state changes
-  React.useEffect(() => {
-    const loadingCount = Object.values(downloadingState).filter(s => s.loading).length;
-    console.log('[ResultsArea] 📊 Download state changed:', { 
-      loadingCount,
-      totalState: Object.keys(downloadingState).length,
-      state: downloadingState 
-    });
-  }, [downloadingState]);
 
   return (
     <motion.div
@@ -314,10 +300,7 @@ const ResultsArea = ({
             alt={title ? `Thumbnail for ${title}` : "Video thumbnail"}
             className="results-thumb-img"
             loading="lazy"
-            onLoad={() => {
-              console.log('[ResultsArea] ✅ Thumbnail loaded');
-              setThumbLoaded(true);
-            }}
+            onLoad={() => { setThumbLoaded(true); }}
             onError={(e) => {
               console.error('[ResultsArea] ❌ Thumbnail failed:', { url: thumbnail, error: e });
               setThumbError(true);
@@ -380,11 +363,12 @@ const ResultsArea = ({
                     </span>
                     <div className="result-row-info">
                       <span className="result-row-label">{label}</span>
+                      {/* Always show size if available */}
                       {size && <span className="result-row-size">~{size}</span>}
                     </div>
                   </div>
 
-                  <span className="result-row-dl">
+                  <span className={`result-row-dl ${isLoading ? "result-row-dl-loading" : ""} ${isDone ? "result-row-dl-done" : ""}`}>
                     {isLoading ? (
                       <><Spinner /><span>Downloading…</span></>
                     ) : isDone ? (
@@ -409,6 +393,7 @@ const ResultsArea = ({
                         progress={state.progress}
                         phase={state.phase}
                         isAudio={isAudio}
+                        startedAt={state.startedAt}
                       />
                     </motion.div>
                   )}
