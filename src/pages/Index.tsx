@@ -471,7 +471,7 @@ export default function Index() {
               onDownload={handleDownload}
               onReset={handleReset}
               downloading={downloading}
-              pageUrl={fetched.pageUrl}  {/* ✅ FIX: pass pageUrl so downloads work */}
+              pageUrl={fetched.pageUrl}
             />
           )}
         </AnimatePresence>
