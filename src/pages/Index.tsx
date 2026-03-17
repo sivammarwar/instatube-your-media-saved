@@ -201,12 +201,6 @@ function simulateProgress(update: ProgressUpdater, durationMs = 25000): () => vo
   let raf: number;
   const start = Date.now();
 
-  const PHASES = [
-    { until: 20,  phase: "preparing" as const, speed: 20  },
-    { until: 80,  phase: "merging"   as const, speed: 60  },
-    { until: 99,  phase: "saving"    as const, speed: 19  },
-  ];
-
   function tick() {
     const elapsed = Date.now() - start;
     let pct: number;
@@ -477,6 +471,7 @@ export default function Index() {
               onDownload={handleDownload}
               onReset={handleReset}
               downloading={downloading}
+              pageUrl={fetched.pageUrl}  {/* ✅ FIX: pass pageUrl so downloads work */}
             />
           )}
         </AnimatePresence>
