@@ -1398,6 +1398,8 @@ h1.logo-text {
     font-weight: 800;
     border-radius: 10px;
     gap: 5px;
+    color: #000000;
+    background: linear-gradient(135deg, #E1306C 0%, #FF6B35 100%);
   }
 
   .result-row-left {
