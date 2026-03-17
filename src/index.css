@@ -10,6 +10,7 @@
    5. Added font-display: swap fallback stack to :root for FOUT resilience
    6. Added SEO content section styles (seo-section, seo-steps, seo-faq, seo-formats)
    7. Added @keyframes spin + .result-row-loading for download spinner state
+   8. Taller, more premium input bar (min-height 74px, larger buttons, bigger font)
    ============================================================ */
 
 /* ── NO @import here — fonts are loaded async in index.html ── */
@@ -271,7 +272,7 @@ h1.logo-text {
 .input-shell {
   position: relative;
   width: 100%;
-  border-radius: 18px;
+  border-radius: 20px;
   background: var(--bg-glass);
   border: 1px solid var(--border-subtle);
   backdrop-filter: blur(24px);
@@ -284,7 +285,7 @@ h1.logo-text {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 1px;
   background: var(--grad-fusion);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -322,13 +323,16 @@ h1.logo-text {
   100% { transform: translateX(300%) scaleX(0.5); }
 }
 
+/* ── INPUT ROW — taller, more spacious ── */
 .input-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 12px 12px 16px;
+  gap: 10px;
+  padding: 16px 16px 16px 22px;
   flex-wrap: nowrap;
+  min-height: 74px;
 }
+
 .input-leading-icon {
   flex-shrink: 0;
   color: var(--text-muted);
@@ -337,18 +341,25 @@ h1.logo-text {
   transition: color 0.3s;
 }
 .input-shell-focused .input-leading-icon { color: #E1306C; }
+
+/* ── INPUT FIELD — larger font, comfortable padding ── */
 .input-field {
   flex: 1;
   background: transparent;
   border: none;
   outline: none;
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 400;
   color: var(--text-primary);
   min-width: 0;
+  padding: 4px 0;
+  line-height: 1.5;
 }
-.input-field::placeholder { color: var(--text-muted); }
+.input-field::placeholder {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
 .input-field:focus-visible {
   outline: 2px solid rgba(225,48,108,0.6);
   outline-offset: 2px;
@@ -358,15 +369,18 @@ h1.logo-text {
 .input-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
+
+/* ── PASTE BUTTON — taller to match new bar height ── */
 .btn-paste {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
-  border-radius: 10px;
+  padding: 0 16px;
+  height: 44px;
+  border-radius: 12px;
   border: 1px solid var(--border-subtle);
   background: rgba(255,255,255,0.06);
   color: var(--text-secondary);
@@ -389,17 +403,20 @@ h1.logo-text {
   outline: 2px solid rgba(225,48,108,0.7);
   outline-offset: 3px;
 }
+
+/* ── FETCH BUTTON — taller, slightly bigger text ── */
 .btn-fetch {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 16px;
-  border-radius: 10px;
+  padding: 0 22px;
+  height: 44px;
+  border-radius: 12px;
   border: none;
   background: var(--grad-fusion);
   color: #fff;
   font-family: var(--font-display);
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   cursor: pointer;
@@ -653,14 +670,8 @@ h1.logo-text {
 .stat-divider { width: 1px; height: 28px; background: var(--border-subtle); }
 
 /* ============================================================
-   PROGRESS BAR — append these rules to your existing CSS file
-   (globals.css / styles.css)
+   PROGRESS BAR
    ============================================================ */
-
-/* ── result-row layout change ────────────────────────────────────────────────
-   The row is now a flex column wrapper; the inner <button> handles click.
-   This lets the progress bar sit *below* the button row, still inside the card.
-   ─────────────────────────────────────────────────────────────────────────── */
 
 /* Override the original result-row to be a column container */
 .result-row {
@@ -668,7 +679,7 @@ h1.logo-text {
   align-items: stretch;
   padding: 0;
   gap: 0;
-  cursor: default; /* cursor handled by inner button */
+  cursor: default;
 }
 
 /* Inner button — takes over the original row appearance */
@@ -684,7 +695,7 @@ h1.logo-text {
   color: var(--text-primary);
   text-align: left;
   gap: 8px;
-  border-radius: 14px;      /* matches outer card */
+  border-radius: 14px;
   transition: background 0.2s;
 }
 
@@ -696,13 +707,12 @@ h1.logo-text {
   background: rgba(255,255,255,0.03);
 }
 
-/* Focus ring on inner button */
 .result-row-btn:focus-visible {
   outline: 2px solid rgba(225,48,108,0.7);
   outline-offset: 2px;
 }
 
-/* ── Progress bar wrapper ──────────────────────────────────────────────────── */
+/* ── Progress bar wrapper ── */
 .dl-progress-wrap {
   padding: 0 14px 12px;
   display: flex;
@@ -732,7 +742,7 @@ h1.logo-text {
   color: var(--text-secondary);
 }
 
-/* ── Track ─────────────────────────────────────────────────────────────────── */
+/* ── Track ── */
 .dl-progress-track {
   position: relative;
   height: 4px;
@@ -788,7 +798,7 @@ h1.logo-text {
   100% { transform: translateX(200%); }
 }
 
-/* ── Glow pulse on the track while active ─────────────────────────────────── */
+/* ── Glow pulse on the track while active ── */
 .result-row-loading .dl-progress-track {
   animation: trackGlow 2s ease-in-out infinite alternate;
 }
@@ -805,6 +815,7 @@ h1.logo-text {
   from { opacity: 0.8; }
   to   { opacity: 1; }
 }
+
 /* ============================================================
    SEO CONTENT SECTIONS
    ============================================================ */
@@ -1090,11 +1101,11 @@ h1.logo-text {
   }
   .logo-sub { font-size: 0.6rem; letter-spacing: 0.12em; }
   .header-tagline { font-size: 0.82rem; }
-  .input-row { padding: 10px 10px 10px 14px; gap: 6px; }
-  .input-field { font-size: 0.82rem; }
+  .input-row { padding: 12px 12px 12px 16px; gap: 6px; min-height: 62px; }
+  .input-field { font-size: 0.9rem; }
   .btn-paste span { display: none; }
-  .btn-paste { padding: 7px 10px; }
-  .btn-fetch { padding: 8px 12px; font-size: 0.68rem; }
+  .btn-paste { padding: 0 10px; height: 38px; }
+  .btn-fetch { padding: 0 14px; height: 38px; font-size: 0.7rem; }
   .btn-fetch span:last-child { display: none; }
   .result-row { padding: 10px 12px; }
   .result-row-icon { width: 30px; height: 30px; }
