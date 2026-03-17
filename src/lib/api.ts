@@ -1,11 +1,21 @@
 // lib/api.ts
 // API client for communicating with FreeReelsDownloader backend
 
-const BASE_URL =
-  process.env.REACT_APP_API_URL ||
-  (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')
-    ? 'https://instatube-api-production.up.railway.app'
-    : 'http://localhost:8080');
+// Priority:
+// 1. Explicit env var (always set this in Vercel: REACT_APP_API_URL)
+// 2. If running on Railway itself (rare — frontend co-deployed with backend)
+// 3. Local dev fallback — NEVER reached in production if env var is set
+const BASE_URL = (() => {
+  if (process.env.REACT_APP_API_URL) return process.env.REACT_APP_API_URL;
+  if (typeof window !== 'undefined') {
+    const h = window.location.hostname;
+    if (h.includes('railway.app')) return 'https://instatube-api-production.up.railway.app';
+    if (h === 'localhost' || h === '127.0.0.1') return 'http://localhost:8080';
+    // Production domain (Vercel, Netlify, custom) — must have env var set
+    console.error('[api] REACT_APP_API_URL is not set! Requests will fail. Set it in your Vercel environment variables.');
+  }
+  return 'http://localhost:8080';
+})();
 
 export interface VideoResource {
   url: string;
