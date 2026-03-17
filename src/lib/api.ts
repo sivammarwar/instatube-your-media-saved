@@ -93,12 +93,12 @@ export async function fetchVideoData(url: string): Promise<ApiResponse<VideoData
 }
 
 // ─────────────────────────────────────────────────────────
-// downloadVideoWithAudio — Method A
+// downloadVideoWithAudio — Method A (RECOMMENDED FOR QUICK DOWNLOADS)
 // Sends pre-resolved CDN video + audio URLs to the backend.
-// Backend uses ffmpeg to merge them and streams back one MP4.
+// Backend uses ffmpeg to merge them with stream copy (fastest).
 //
 // Use this when you already have videoUrl + audioUrl from
-// the /api/video-info response.
+// the /api/video-info response. Much faster than re-encoding.
 // ─────────────────────────────────────────────────────────
 export async function downloadVideoWithAudio(
   videoUrl: string,
@@ -107,7 +107,7 @@ export async function downloadVideoWithAudio(
   platform?: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('[api] downloadVideoWithAudio — sending to /api/download');
+    console.log('[api] downloadVideoWithAudio — sending pre-resolved URLs to backend');
 
     const response = await fetch(`${BASE_URL}/api/download`, {
       method: 'POST',
@@ -129,13 +129,14 @@ export async function downloadVideoWithAudio(
 }
 
 // ─────────────────────────────────────────────────────────
-// downloadDirect — Method B (RECOMMENDED)
+// downloadDirect — Method B (FALLBACK / HIGHEST QUALITY)
 // Sends the original page URL + quality to the backend.
-// Backend uses yt-dlp to fetch + merge everything itself.
+// Backend uses yt-dlp to fetch best video+audio combo.
 //
-// More reliable than Method A because:
-//  - CDN URLs from /api/video-info can expire before download
-//  - yt-dlp handles format selection and muxing natively
+// More reliable when:
+//  - CDN URLs from /api/video-info are expired
+//  - Best muxed format is needed (higher quality audio)
+//  - Age-restricted or geolocked content
 //
 // quality: "1080" | "720" | "480" | "360" | undefined (= best)
 // type:    "video" | "audio"

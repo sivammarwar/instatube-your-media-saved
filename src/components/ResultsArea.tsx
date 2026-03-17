@@ -1,6 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
+import React from "react";
 import type { Platform } from "./InputStage";
 import type { VideoData, VideoResource } from "@/lib/api";
+import { downloadVideoWithAudio, downloadDirect } from "@/lib/api";
 
 interface DownloadState {
   loading: boolean;
@@ -16,6 +18,7 @@ interface ResultsAreaProps {
   onReset: () => void;
   /** key = item.url → download state for that button */
   downloading?: Record<string, DownloadState | boolean>;
+  pageUrl?: string; // Original page URL for fallback downloads
 }
 
 const transition = { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const };
@@ -118,24 +121,113 @@ function ProgressBar({ progress, phase, isAudio }: ProgressBarProps) {
 // ── Main component ─────────────────────────────────────────────────────────
 const ResultsArea = ({
   videoData,
-  onDownload,
   onReset,
+  pageUrl = "",
   downloading = {},
 }: ResultsAreaProps) => {
   const { videos, audios, thumbnail, title } = videoData;
+  const [thumbError, setThumbError] = React.useState(false);
+  const [thumbLoaded, setThumbLoaded] = React.useState(false);
+  const [downloadingState, setDownloadingState] = React.useState<Record<string, DownloadState>>(downloading || {});
 
   const allItems: Array<VideoResource & { type: "video" | "audio" }> = [
     ...videos.map(v => ({ ...v, type: "video" as const })),
     ...audios.map(a => ({ ...a, type: "audio" as const })),
   ];
 
+  // Handle download with proper audio+video merge logic
+  const handleDownload = React.useCallback(
+    async (item: VideoResource & { type: "video" | "audio" }, label: string) => {
+      const key = item.url;
+      
+      // Mark as loading
+      setDownloadingState(prev => ({
+        ...prev,
+        [key]: { loading: true, phase: "preparing", progress: undefined }
+      }));
+
+      try {
+        let result;
+
+        if (item.type === "audio") {
+          // Audio: use direct download
+          console.log('[ResultsArea] Downloading audio:', label);
+          result = await downloadDirect(pageUrl, title || "audio", undefined, "audio");
+        } else {
+          // Video: Try to find matching audio and use fast merge (Method A)
+          const matchingAudio = audios.length > 0 ? audios[0] : null;
+
+          if (matchingAudio && item.url && matchingAudio.url) {
+            // Has both video and audio → use fast merge (stream copy)
+            console.log('[ResultsArea] Downloading video+audio (fast merge):', label);
+            setDownloadingState(prev => ({
+              ...prev,
+              [key]: { loading: true, phase: "merging", progress: undefined }
+            }));
+            result = await downloadVideoWithAudio(item.url, matchingAudio.url, title || "video", "youtube");
+          } else {
+            // Fallback: use yt-dlp direct download (handles muxing internally)
+            console.log('[ResultsArea] Downloading video via yt-dlp (fallback):', label);
+            const quality = item.quality?.replace('p', '') || undefined;
+            result = await downloadDirect(pageUrl, title || "video", quality, "video");
+          }
+        }
+
+        if (result.success) {
+          // Mark as complete
+          setDownloadingState(prev => ({
+            ...prev,
+            [key]: { loading: false, phase: "saving", progress: 100 }
+          }));
+          
+          // Keep success state for 2 seconds then clear
+          setTimeout(() => {
+            setDownloadingState(prev => {
+              const newState = { ...prev };
+              delete newState[key];
+              return newState;
+            });
+          }, 2000);
+        } else {
+          console.error('[ResultsArea] Download failed:', result.error);
+          setDownloadingState(prev => {
+            const newState = { ...prev };
+            delete newState[key];
+            return newState;
+          });
+          alert(`Download failed: ${result.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error('[ResultsArea] Download error:', err);
+        setDownloadingState(prev => {
+          const newState = { ...prev };
+          delete newState[key];
+          return newState;
+        });
+        alert(`Download failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+    },
+    [pageUrl, title, audios]
+  );
+
   // Normalise the downloading value for a given key to a DownloadState
   function getState(key: string): DownloadState {
-    const raw = downloading[key];
+    const raw = downloadingState[key];
     if (!raw) return { loading: false };
-    if (typeof raw === "boolean") return { loading: raw };
     return raw;
   }
+
+  // Show thumbnail if available and not errored
+  const shouldShowThumbnail = thumbnail && !thumbError;
+
+  // Log thumbnail info for debugging
+  React.useEffect(() => {
+    if (thumbnail) {
+      console.log('[ResultsArea] Thumbnail URL:', thumbnail.slice(0, 100) + '...');
+      console.log('[ResultsArea] Thumbnail Error:', thumbError);
+      console.log('[ResultsArea] Thumbnail Loaded:', thumbLoaded);
+    }
+  }, [thumbnail, thumbError, thumbLoaded]);
 
   return (
     <motion.div
@@ -146,7 +238,7 @@ const ResultsArea = ({
       className="results-root"
     >
       {/* Thumbnail */}
-      {thumbnail && (
+      {shouldShowThumbnail && (
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -158,6 +250,15 @@ const ResultsArea = ({
             alt={title ? `Thumbnail for ${title}` : "Video thumbnail"}
             className="results-thumb-img"
             loading="lazy"
+            onLoad={() => {
+              console.log('[ResultsArea] ✅ Thumbnail loaded successfully');
+              setThumbLoaded(true);
+            }}
+            onError={(e) => {
+              console.error('[ResultsArea] ❌ Thumbnail failed to load from URL:', thumbnail);
+              console.error('[ResultsArea] Error event:', e);
+              setThumbError(true);
+            }}
           />
           {title && (
             <div className="results-thumb-overlay">
@@ -183,7 +284,7 @@ const ResultsArea = ({
             const isAudio  = item.type === "audio";
             const state    = getState(item.url);
             const isLoading = state.loading;
-            const isDone   = !isLoading && (downloading[item.url] as DownloadState)?.phase === "saving";
+            const isDone   = !isLoading && state.phase === "saving";
 
             const label = isAudio
               ? `Audio · ${item.format?.toUpperCase() || "MP3"}`
@@ -200,7 +301,7 @@ const ResultsArea = ({
               >
                 {/* Main clickable row */}
                 <button
-                  onClick={() => onDownload(item, label)}
+                  onClick={() => handleDownload(item, label)}
                   disabled={isLoading}
                   aria-busy={isLoading}
                   aria-label={
