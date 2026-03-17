@@ -10,8 +10,9 @@ interface InputStageProps {
 }
 
 function detectPlatform(url: string): Platform {
-  if (/instagram\.com\/(p|reel|stories)\//i.test(url)) return "instagram";
-  if (/youtu\.be\/|youtube\.com\/watch/i.test(url)) return "youtube";
+  if (/instagram\.com\/(p|reel|stories|tv)\//i.test(url)) return "instagram";
+  // Added /shorts/ support
+  if (/youtu\.be\/|youtube\.com\/(watch|shorts)\//i.test(url)) return "youtube";
   return null;
 }
 
@@ -57,7 +58,6 @@ const InputStage = ({ onSubmit, isLoading, error }: InputStageProps) => {
         )}
 
         <div className="input-row">
-          {/* Leading icon — decorative only */}
           <div className="input-leading-icon" aria-hidden="true">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -85,7 +85,6 @@ const InputStage = ({ onSubmit, isLoading, error }: InputStageProps) => {
           />
 
           <div className="input-actions">
-            {/* FIX: aria-label added — this was the failing audit */}
             <button
               onClick={handlePaste}
               disabled={isLoading}
@@ -93,17 +92,7 @@ const InputStage = ({ onSubmit, isLoading, error }: InputStageProps) => {
               aria-label="Paste URL from clipboard"
               type="button"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect width="8" height="4" x="8" y="2" rx="1"/>
                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
               </svg>
@@ -125,17 +114,7 @@ const InputStage = ({ onSubmit, isLoading, error }: InputStageProps) => {
                   type="button"
                 >
                   <span>{isLoading ? "Loading…" : "Fetch"}</span>
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M5 12h14M12 5l7 7-7 7"/>
                   </svg>
                 </motion.button>
@@ -145,7 +124,6 @@ const InputStage = ({ onSubmit, isLoading, error }: InputStageProps) => {
         </div>
       </motion.div>
 
-      {/* Hint text — referenced by aria-describedby on the input */}
       <AnimatePresence>
         {!error && !isLoading && !url && (
           <motion.p
@@ -160,7 +138,6 @@ const InputStage = ({ onSubmit, isLoading, error }: InputStageProps) => {
         )}
       </AnimatePresence>
 
-      {/* Error — role="alert" announces immediately to screen readers */}
       <AnimatePresence>
         {error && (
           <motion.div
@@ -170,20 +147,10 @@ const InputStage = ({ onSubmit, isLoading, error }: InputStageProps) => {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3, ease: [0.16,1,0.3,1] }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="input-error"
           >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10"/>
               <line x1="12" y1="8" x2="12" y2="12"/>
               <line x1="12" y1="16" x2="12.01" y2="16"/>

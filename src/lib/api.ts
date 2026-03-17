@@ -1,79 +1,204 @@
+// lib/api.ts
+// API client for communicating with FreeReelsDownloader backend
+
+const BASE_URL =
+  process.env.REACT_APP_API_URL ||
+  (typeof window !== 'undefined' && window.location.hostname.includes('railway.app')
+    ? 'https://instatube-api-production.up.railway.app'
+    : 'http://localhost:8080');
+
 export interface VideoResource {
-  format: string;
-  quality: string | null;
   url: string;
-  sizeMB: number;
+  quality?: string;
+  format?: string;
+  sizeMB?: number;
+  directUrl?: boolean;
 }
 
 export interface VideoData {
-  title: string | null;
-  thumbnail: string | null;
-  duration: number | null;
+  title?: string;
+  duration?: number;
+  thumbnail?: string;
   videos: VideoResource[];
   audios: VideoResource[];
 }
 
-export interface VideoResponse {
+export interface ApiResponse<T> {
   success: boolean;
-  data?: VideoData;
   error?: string;
+  data?: T;
 }
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://instatube-api-production.up.railway.app';
-
-// Friendly fallback messages for frontend network errors
-function getFriendlyError(err: unknown): string {
-  const msg = err instanceof Error ? err.message.toLowerCase() : '';
-  if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('network'))
-    return 'Unable to connect. Please check your internet connection and try again.';
-  if (msg.includes('timeout'))
-    return 'The request timed out. Please try again.';
-  return 'Something went wrong. Please try again in a moment.';
+export function getApiBase(): string {
+  return BASE_URL;
 }
 
-export async function fetchVideoData(url: string): Promise<VideoResponse> {
+// ─────────────────────────────────────────────────────────
+// fetchVideoData — unchanged, works correctly
+// ─────────────────────────────────────────────────────────
+export async function fetchVideoData(url: string): Promise<ApiResponse<VideoData>> {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout
-
     const response = await fetch(`${BASE_URL}/api/video-info`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url }),
-      signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
-
-    // Handle non-OK responses gracefully
     if (!response.ok) {
-      try {
-        const data = await response.json() as VideoResponse;
-        return { success: false, error: data.error || 'Something went wrong. Please try again.' };
-      } catch {
-        return { success: false, error: 'Our servers are temporarily busy. Please try again in a moment.' };
-      }
+      return { success: false, error: `Server error: ${response.status}` };
     }
 
-    const data = await response.json() as VideoResponse;
+    const result = await response.json();
 
-    // Fix relative URLs
-    if (data.success && data.data) {
-      data.data.videos = data.data.videos.map(v => ({
-        ...v,
-        url: v.url.startsWith('/') ? `${BASE_URL}${v.url}` : v.url,
-      }));
-      data.data.audios = data.data.audios.map(a => ({
-        ...a,
-        url: a.url.startsWith('/') ? `${BASE_URL}${a.url}` : a.url,
-      }));
+    if (!result.success) {
+      return { success: false, error: result.error || 'Failed to fetch video data' };
     }
 
-    return data;
+    const videoData: VideoData = {
+      title: result.data.title,
+      duration: result.data.duration,
+      thumbnail: result.data.thumbnail,
+      videos: (result.data.videos || []).map((v: any) => ({
+        url: v.url || '',
+        quality: v.quality,
+        format: v.format,
+        sizeMB: v.sizeMB,
+        directUrl: v.directUrl,
+      })),
+      audios: (result.data.audios || []).map((a: any) => ({
+        url: a.url || '',
+        quality: a.quality,
+        format: a.format,
+        sizeMB: a.sizeMB,
+        directUrl: a.directUrl,
+      })),
+    };
 
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError')
-      return { success: false, error: 'The request timed out. Please try again.' };
-    return { success: false, error: getFriendlyError(err) };
+    return { success: true, data: videoData };
+  } catch (error) {
+    console.error('[api] fetchVideoData error:', error);
+    return { success: false, error: 'Network error. Please check your connection.' };
   }
+}
+
+// ─────────────────────────────────────────────────────────
+// downloadVideoWithAudio — Method A
+// Sends pre-resolved CDN video + audio URLs to the backend.
+// Backend uses ffmpeg to merge them and streams back one MP4.
+//
+// Use this when you already have videoUrl + audioUrl from
+// the /api/video-info response.
+// ─────────────────────────────────────────────────────────
+export async function downloadVideoWithAudio(
+  videoUrl: string,
+  audioUrl: string,
+  title: string,
+  platform?: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log('[api] downloadVideoWithAudio — sending to /api/download');
+
+    const response = await fetch(`${BASE_URL}/api/download`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoUrl, audioUrl, title, platform }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { success: false, error: errorData.error || `Server error: ${response.status}` };
+    }
+
+    await saveBlobFromResponse(response, `${sanitizeFilename(title)}.mp4`);
+    return { success: true };
+  } catch (error) {
+    console.error('[api] downloadVideoWithAudio error:', error);
+    return { success: false, error: 'Download failed. Please try again.' };
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// downloadDirect — Method B (RECOMMENDED)
+// Sends the original page URL + quality to the backend.
+// Backend uses yt-dlp to fetch + merge everything itself.
+//
+// More reliable than Method A because:
+//  - CDN URLs from /api/video-info can expire before download
+//  - yt-dlp handles format selection and muxing natively
+//
+// quality: "1080" | "720" | "480" | "360" | undefined (= best)
+// type:    "video" | "audio"
+// ─────────────────────────────────────────────────────────
+export async function downloadDirect(
+  pageUrl: string,
+  title: string,
+  quality?: string,
+  type: 'video' | 'audio' = 'video',
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`[api] downloadDirect — quality=${quality} type=${type} url=${pageUrl.slice(0, 60)}`);
+
+    const response = await fetch(`${BASE_URL}/api/download-direct`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: pageUrl, quality, type, title }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return { success: false, error: errorData.error || `Server error: ${response.status}` };
+    }
+
+    const ext = type === 'audio' ? 'm4a' : 'mp4';
+    await saveBlobFromResponse(response, `${sanitizeFilename(title)}.${ext}`);
+    return { success: true };
+  } catch (error) {
+    console.error('[api] downloadDirect error:', error);
+    return { success: false, error: 'Download failed. Please try again.' };
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// triggerDownload — AUDIO-ONLY helper
+// Only use this for audio-only streams where the single URL
+// already contains audio (e.g. Instagram audio-only format).
+// NEVER call this with a video CDN URL — it will be silent.
+// ─────────────────────────────────────────────────────────
+export async function triggerDownload(
+  downloadUrl: string,
+  filename: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.warn('[api] triggerDownload called — only use for audio-only streams');
+    const response = await fetch(downloadUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    await saveBlobFromResponse(response, filename);
+    return { success: true };
+  } catch (error) {
+    console.error('[api] triggerDownload error:', error);
+    return { success: false, error: 'Download failed. Please try again.' };
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// Internal helpers
+// ─────────────────────────────────────────────────────────
+
+async function saveBlobFromResponse(response: Response, filename: string): Promise<void> {
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
+}
+
+function sanitizeFilename(title: string): string {
+  return (title || 'video')
+    .replace(/[^\w\s\-().]/g, '')
+    .replace(/\s+/g, '_')
+    .slice(0, 100) || 'video';
 }

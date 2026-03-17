@@ -9,6 +9,7 @@
    4. Improved contrast on footer / legal-disclaimer text (fixes low-contrast audit)
    5. Added font-display: swap fallback stack to :root for FOUT resilience
    6. Added SEO content section styles (seo-section, seo-steps, seo-faq, seo-formats)
+   7. Added @keyframes spin + .result-row-loading for download spinner state
    ============================================================ */
 
 /* ── NO @import here — fonts are loaded async in index.html ── */
@@ -529,11 +530,25 @@ h1.logo-text {
 .result-row::before { content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.3s; }
 .result-row-video::before { background: linear-gradient(90deg, rgba(255,0,0,0.06), transparent); }
 .result-row-audio::before { background: linear-gradient(90deg, rgba(131,58,180,0.08), transparent); }
-.result-row:hover { background: var(--bg-card-hover); transform: translateX(4px) translateY(-2px); border-color: rgba(255,255,255,0.14); }
-.result-row-video:hover { box-shadow: 0 4px 24px rgba(255,0,0,0.15), 0 2px 8px rgba(0,0,0,0.3); border-color: var(--border-yt); }
-.result-row-audio:hover { box-shadow: 0 4px 24px rgba(225,48,108,0.15), 0 2px 8px rgba(0,0,0,0.3); border-color: var(--border-glow); }
-.result-row:hover::before { opacity: 1; }
+.result-row:hover:not(.result-row-loading) { background: var(--bg-card-hover); transform: translateX(4px) translateY(-2px); border-color: rgba(255,255,255,0.14); }
+.result-row-video:hover:not(.result-row-loading) { box-shadow: 0 4px 24px rgba(255,0,0,0.15), 0 2px 8px rgba(0,0,0,0.3); border-color: var(--border-yt); }
+.result-row-audio:hover:not(.result-row-loading) { box-shadow: 0 4px 24px rgba(225,48,108,0.15), 0 2px 8px rgba(0,0,0,0.3); border-color: var(--border-glow); }
+.result-row:hover:not(.result-row-loading)::before { opacity: 1; }
 .result-row:focus-visible { outline: 2px solid rgba(225,48,108,0.7); outline-offset: 2px; }
+
+/* ── Download loading state ── */
+.result-row-loading {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.result-row-loading .result-row-dl {
+  background: rgba(255,255,255,0.08);
+  box-shadow: none;
+  color: var(--text-secondary);
+}
+
 .result-row-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .result-row-icon {
   width: 34px; height: 34px;
@@ -544,7 +559,7 @@ h1.logo-text {
   flex-shrink: 0;
   transition: transform 0.2s;
 }
-.result-row:hover .result-row-icon { transform: scale(1.1) rotate(-5deg); }
+.result-row:hover:not(.result-row-loading) .result-row-icon { transform: scale(1.1) rotate(-5deg); }
 .icon-video { background: rgba(255,0,0,0.15); border: 1px solid rgba(255,0,0,0.25); color: #ff5555; }
 .icon-audio { background: rgba(225,48,108,0.15); border: 1px solid rgba(225,48,108,0.25); color: #f472b6; }
 .result-row-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -566,8 +581,11 @@ h1.logo-text {
   flex-shrink: 0;
   transition: all 0.2s;
   white-space: nowrap;
+  min-width: 100px;
+  justify-content: center;
 }
-.result-row:hover .result-row-dl { box-shadow: 0 4px 20px rgba(225,48,108,0.45); transform: scale(1.04); }
+.result-row:hover:not(.result-row-loading) .result-row-dl { box-shadow: 0 4px 20px rgba(225,48,108,0.45); transform: scale(1.04); }
+
 .results-empty { font-size: 0.82rem; color: var(--text-muted); text-align: center; padding: 24px 0; font-style: italic; }
 .results-reset {
   display: inline-flex;
@@ -590,6 +608,11 @@ h1.logo-text {
 }
 .results-reset:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: var(--text-primary); transform: translateY(-1px); }
 .results-reset:focus-visible { outline: 2px solid rgba(225,48,108,0.7); outline-offset: 3px; }
+
+/* ── Spinner — used in ResultsArea download buttons ── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 /* ============================================================
    STATS BAR
@@ -923,7 +946,7 @@ h1.logo-text {
   .result-row { padding: 10px 12px; }
   .result-row-icon { width: 30px; height: 30px; }
   .result-row-label { font-size: 0.78rem; }
-  .result-row-dl { padding: 6px 10px; font-size: 0.68rem; }
+  .result-row-dl { padding: 6px 10px; font-size: 0.68rem; min-width: 88px; }
   .stats-bar { padding: 12px 10px; }
   .stat-value { font-size: 0.95rem; }
   .stat-label { font-size: 0.55rem; letter-spacing: 0.04em; }
@@ -934,7 +957,6 @@ h1.logo-text {
   .shaft-1 { width: 260px; height: 260px; }
   .shaft-2 { width: 300px; height: 200px; }
   .shaft-3 { width: 220px; height: 220px; }
-  /* SEO sections mobile */
   .seo-section { padding: 40px 16px 30px; }
   .seo-inner { gap: 40px; }
   .seo-heading { font-size: 1.1rem; }
@@ -964,4 +986,5 @@ h1.logo-text {
   .light-shaft { animation: none; }
   .input-progress-bar { animation: none; }
   .fade-up { animation: none; opacity: 1; }
+  .result-row-dl svg { animation: none; }
 }
