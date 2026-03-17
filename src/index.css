@@ -1,19 +1,7 @@
 /* ============================================================
    FreeReelsDownloader — Instagram × YouTube Fusion Theme
-   Deep 3D glassmorphism with dual-brand gradient identity
-
-   CHANGES FROM ORIGINAL:
-   1. Removed @import for Google Fonts — now loaded async in index.html
-   2. Added will-change: background-position to .logo-text (fixes non-composited animation audit)
-   3. Fixed @keyframes textShimmer to use background-position shorthand (not background-position-x)
-   4. Improved contrast on footer / legal-disclaimer text (fixes low-contrast audit)
-   5. Added font-display: swap fallback stack to :root for FOUT resilience
-   6. Added SEO content section styles (seo-section, seo-steps, seo-faq, seo-formats)
-   7. Added @keyframes spin + .result-row-loading for download spinner state
-   8. Taller, more premium input bar (min-height 74px, larger buttons, bigger font)
+   DUAL THEME: Dark desktop + Light mobile
    ============================================================ */
-
-/* ── NO @import here — fonts are loaded async in index.html ── */
 
 /* ── Design Tokens ── */
 :root {
@@ -192,7 +180,6 @@ body {
   50%       { opacity: 0.9; transform: scale(1.08); }
 }
 
-/* ── Wordmark — works for both div.logo-text and h1.logo-text ── */
 .logo-text,
 h1.logo-text {
   font-family: var(--font-display);
@@ -231,7 +218,6 @@ h1.logo-text {
   line-height: 1.5;
 }
 
-/* ── Platform Pills ── */
 .platform-pills { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
 .pill {
   display: inline-flex;
@@ -323,7 +309,6 @@ h1.logo-text {
   100% { transform: translateX(300%) scaleX(0.5); }
 }
 
-/* ── INPUT ROW — taller, more spacious ── */
 .input-row {
   display: flex;
   align-items: center;
@@ -342,7 +327,6 @@ h1.logo-text {
 }
 .input-shell-focused .input-leading-icon { color: #E1306C; }
 
-/* ── INPUT FIELD — larger font, comfortable padding ── */
 .input-field {
   flex: 1;
   background: transparent;
@@ -373,7 +357,6 @@ h1.logo-text {
   flex-shrink: 0;
 }
 
-/* ── PASTE BUTTON — taller to match new bar height ── */
 .btn-paste {
   display: inline-flex;
   align-items: center;
@@ -404,7 +387,6 @@ h1.logo-text {
   outline-offset: 3px;
 }
 
-/* ── FETCH BUTTON — taller, slightly bigger text ── */
 .btn-fetch {
   display: inline-flex;
   align-items: center;
@@ -553,7 +535,6 @@ h1.logo-text {
 .result-row:hover:not(.result-row-loading)::before { opacity: 1; }
 .result-row:focus-visible { outline: 2px solid rgba(225,48,108,0.7); outline-offset: 2px; }
 
-/* ── Download loading state ── */
 .result-row-loading {
   opacity: 0.65;
   cursor: not-allowed;
@@ -626,7 +607,6 @@ h1.logo-text {
 .results-reset:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: var(--text-primary); transform: translateY(-1px); }
 .results-reset:focus-visible { outline: 2px solid rgba(225,48,108,0.7); outline-offset: 3px; }
 
-/* ── Spinner — used in ResultsArea download buttons ── */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -672,8 +652,6 @@ h1.logo-text {
 /* ============================================================
    PROGRESS BAR
    ============================================================ */
-
-/* Override the original result-row to be a column container */
 .result-row {
   flex-direction: column;
   align-items: stretch;
@@ -682,7 +660,6 @@ h1.logo-text {
   cursor: default;
 }
 
-/* Inner button — takes over the original row appearance */
 .result-row-btn {
   display: flex;
   align-items: center;
@@ -712,7 +689,6 @@ h1.logo-text {
   outline-offset: 2px;
 }
 
-/* ── Progress bar wrapper ── */
 .dl-progress-wrap {
   padding: 0 14px 12px;
   display: flex;
@@ -742,7 +718,6 @@ h1.logo-text {
   color: var(--text-secondary);
 }
 
-/* ── Track ── */
 .dl-progress-track {
   position: relative;
   height: 4px;
@@ -751,7 +726,6 @@ h1.logo-text {
   overflow: hidden;
 }
 
-/* Determinate fill */
 .dl-progress-fill {
   height: 100%;
   border-radius: 99px;
@@ -768,7 +742,6 @@ h1.logo-text {
   box-shadow: 0 0 8px rgba(225,48,108,0.5);
 }
 
-/* Indeterminate sweep */
 .dl-progress-indeterminate {
   position: absolute;
   inset: 0;
@@ -798,7 +771,6 @@ h1.logo-text {
   100% { transform: translateX(200%); }
 }
 
-/* ── Glow pulse on the track while active ── */
 .result-row-loading .dl-progress-track {
   animation: trackGlow 2s ease-in-out infinite alternate;
 }
@@ -858,7 +830,6 @@ h1.logo-text {
   margin: 0;
 }
 
-/* ── How-to steps ── */
 .seo-steps {
   list-style: none;
   display: flex;
@@ -914,7 +885,6 @@ h1.logo-text {
   margin: 0;
 }
 
-/* ── Formats grid ── */
 .seo-formats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -962,7 +932,6 @@ h1.logo-text {
   font-size: 0.7rem;
 }
 
-/* ── FAQ accordion ── */
 .seo-faq {
   display: flex;
   flex-direction: column;
@@ -1079,55 +1048,506 @@ h1.logo-text {
 .footer-sep { width: 3px; height: 3px; border-radius: 50%; background: var(--border-subtle); }
 
 /* ============================================================
-   SCROLLBAR
+   IMAGE SECTIONS
    ============================================================ */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: var(--bg-void); }
-::-webkit-scrollbar-thumb { background: linear-gradient(var(--ig-purple), var(--yt-red)); border-radius: 4px; }
+
+/* Hero Image - Responsive (600x300 mobile, 1200x400 desktop) */
+.hero-image-wrapper {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+  background: var(--bg-card);
+}
+
+.hero-image-wrapper picture {
+  display: block;
+}
+
+.hero-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-image-wrapper:hover .hero-image {
+  transform: scale(1.02);
+}
+
+/* Feature Images - 600x400 px */
+.feature-image-wrapper {
+  width: 100%;
+  margin: 20px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-card);
+  background: var(--bg-card);
+}
+
+.feature-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.feature-image-wrapper:hover .feature-image {
+  transform: scale(1.02);
+}
 
 /* ============================================================
-   MOBILE RESPONSIVE — max-width: 480px
+   IMAGE SECTIONS - MOBILE RESPONSIVE
    ============================================================ */
 @media (max-width: 480px) {
-  .page-main { padding: 40px 16px 32px; gap: 20px; }
-  .logo-orb { width: 56px; height: 56px; }
+  .hero-image-wrapper {
+    border: 1px solid rgba(225, 48, 108, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin: 0 auto 10px;
+    border-radius: 12px;
+  }
+
+  .hero-image {
+    border-radius: 12px;
+  }
+
+  .hero-image-wrapper:hover .hero-image {
+    transform: scale(1.01);
+  }
+
+  .feature-image-wrapper {
+    border: 1px solid rgba(225, 48, 108, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin: 14px 0;
+    border-radius: 12px;
+  }
+
+  .feature-image {
+    border-radius: 12px;
+  }
+
+  .feature-image-wrapper:hover .feature-image {
+    transform: scale(1.01);
+  }
+}
+
+/* ============================================================
+   TABLET RESPONSIVE (481px - 768px)
+   ============================================================ */
+@media (min-width: 481px) and (max-width: 768px) {
+  .hero-image-wrapper {
+    border-radius: 14px;
+    margin: 0 auto 16px;
+  }
+
+  .feature-image-wrapper {
+    margin: 18px 0;
+    border-radius: 14px;
+  }
+}
+
+
+
+/* ============================================================
+   MOBILE RESPONSIVE — max-width: 480px (WHITE THEME)
+   ============================================================ */
+@media (max-width: 480px) {
+  /* ── Override with white theme ── */
+  body {
+    background: #f8f7fc;
+    color: #1a1625;
+  }
+
+  .page-root {
+    background: #f8f7fc;
+  }
+
+  #bg-canvas {
+    display: none;
+  }
+
+  .light-shaft {
+    display: none;
+  }
+
+  /* ── Mobile header with soft shadows ── */
+  .page-main { 
+    padding: 40px 16px 32px; 
+    gap: 20px;
+  }
+
+  .logo-orb { 
+    width: 56px; 
+    height: 56px;
+  }
+
+  .logo-orb::before {
+    filter: blur(12px);
+    opacity: 0.5;
+  }
+
+  .logo-orb-inner {
+    background: #ffffff;
+    border: 1.5px solid rgba(225, 48, 108, 0.3);
+    box-shadow: 0 4px 16px rgba(225, 48, 108, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo-orb-inner svg {
+    width: 26px;
+    height: 26px;
+    stroke: #E1306C;
+    stroke-width: 2.5;
+    color: #E1306C;
+  }
+
   .logo-text, h1.logo-text {
-    font-size: 1.25rem;
+    font-size: 2.2rem;
     letter-spacing: -0.02em;
     word-break: break-word;
     text-align: center;
     max-width: 100%;
     line-height: 1.2;
   }
-  .logo-sub { font-size: 0.6rem; letter-spacing: 0.12em; }
-  .header-tagline { font-size: 0.82rem; }
-  .input-row { padding: 12px 12px 12px 16px; gap: 6px; min-height: 62px; }
-  .input-field { font-size: 0.9rem; }
-  .btn-paste span { display: none; }
-  .btn-paste { padding: 0 10px; height: 38px; }
-  .btn-fetch { padding: 0 14px; height: 38px; font-size: 0.7rem; }
-  .btn-fetch span:last-child { display: none; }
-  .result-row { padding: 10px 12px; }
-  .result-row-icon { width: 30px; height: 30px; }
-  .result-row-label { font-size: 0.78rem; }
-  .result-row-dl { padding: 6px 10px; font-size: 0.68rem; min-width: 88px; }
-  .stats-bar { padding: 12px 10px; }
-  .stat-value { font-size: 0.95rem; }
-  .stat-label { font-size: 0.55rem; letter-spacing: 0.04em; }
-  .stat-divider { height: 22px; }
-  .legal-section { padding: 40px 16px 30px; }
-  .legal-grid { grid-template-columns: 1fr; }
-  .legal-card { padding: 14px 16px; }
-  .shaft-1 { width: 260px; height: 260px; }
-  .shaft-2 { width: 300px; height: 200px; }
-  .shaft-3 { width: 220px; height: 220px; }
-  .seo-section { padding: 40px 16px 30px; }
-  .seo-inner { gap: 40px; }
-  .seo-heading { font-size: 1.1rem; }
-  .seo-formats-grid { grid-template-columns: 1fr; }
-  .seo-steps li { padding: 12px 14px; gap: 12px; }
-  .faq-question { font-size: 0.8rem; padding: 12px 14px; }
-  .faq-answer { padding: 0 14px 12px; }
+
+  .logo-sub { 
+    font-size: 0.75rem; 
+    letter-spacing: 0.12em;
+    color: #8b7d9a;
+    font-weight: 600;
+  }
+
+  .header-tagline { 
+    font-size: 0.95rem;
+    color: #5a5266;
+    font-weight: 400;
+  }
+
+  /* ── Mobile input card with subtle shadow ── */
+  .input-shell {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(225, 48, 108, 0.15);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06), 0 1px 4px rgba(225, 48, 108, 0.08);
+    backdrop-filter: blur(12px);
+  }
+
+  .input-shell-focused {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(225, 48, 108, 0.35);
+    box-shadow: 0 4px 20px rgba(225, 48, 108, 0.15), 0 2px 8px rgba(255, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .input-row { 
+    padding: 12px 12px 12px 16px; 
+    gap: 6px; 
+    min-height: 62px;
+  }
+
+  .input-leading-icon {
+    color: #8b7d9a;
+  }
+
+  .input-shell-focused .input-leading-icon { 
+    color: #E1306C; 
+  }
+
+  .input-field { 
+    font-size: 0.9rem;
+    color: #1a1625;
+  }
+
+  .input-field::placeholder {
+    color: #9b8fae;
+  }
+
+  .btn-paste {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(225, 48, 108, 0.2);
+    color: #6b5a7a;
+    padding: 0 10px;
+    height: 38px;
+  }
+
+  .btn-paste span { 
+    display: none; 
+  }
+
+  .btn-paste:hover {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(225, 48, 108, 0.3);
+    color: #1a1625;
+  }
+
+  .btn-fetch { 
+    padding: 0 14px; 
+    height: 38px; 
+    font-size: 0.7rem;
+    box-shadow: 0 2px 12px rgba(225, 48, 108, 0.25);
+  }
+
+  .btn-fetch:hover {
+    box-shadow: 0 4px 18px rgba(225, 48, 108, 0.35);
+  }
+
+  .btn-fetch span:last-child { 
+    display: none; 
+  }
+
+  /* ── Mobile results with light backgrounds ── */
+  .result-row { 
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(225, 48, 108, 0.1);
+  }
+
+  .result-row:hover:not(.result-row-loading) {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(225, 48, 108, 0.25);
+    box-shadow: 0 2px 12px rgba(225, 48, 108, 0.1);
+  }
+
+  .result-row-icon { 
+    width: 30px; 
+    height: 30px;
+  }
+
+  .icon-video { 
+    background: rgba(255, 0, 0, 0.08); 
+    border: 1px solid rgba(255, 0, 0, 0.2);
+    color: #ff4444;
+  }
+
+  .icon-audio { 
+    background: rgba(225, 48, 108, 0.08); 
+    border: 1px solid rgba(225, 48, 108, 0.2);
+    color: #E1306C;
+  }
+
+  .result-row-label { 
+    font-size: 0.78rem;
+    color: #1a1625;
+  }
+
+  .result-row-size {
+    color: #8b7d9a;
+  }
+
+  .result-row-dl { 
+    padding: 6px 10px; 
+    font-size: 0.68rem; 
+    min-width: 88px;
+    box-shadow: 0 2px 8px rgba(225, 48, 108, 0.2);
+  }
+
+  .results-thumb-overlay {
+    background: linear-gradient(transparent, rgba(248, 247, 252, 0.95));
+  }
+
+  .results-thumb-title {
+    color: #1a1625;
+  }
+
+  /* ── Mobile stats bar ── */
+  .stats-bar { 
+    padding: 12px 10px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(225, 48, 108, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .stat-value { 
+    font-size: 0.95rem;
+  }
+
+  .stat-label { 
+    font-size: 0.55rem; 
+    letter-spacing: 0.04em;
+    color: #8b7d9a;
+  }
+
+  .stat-divider { 
+    height: 22px;
+    background: rgba(225, 48, 108, 0.15);
+  }
+
+  /* ── Mobile SEO section ── */
+  .seo-section { 
+    padding: 40px 16px 30px;
+    background: #f8f7fc;
+    border-top: 1px solid rgba(225, 48, 108, 0.1);
+  }
+
+  .seo-heading {
+    color: #1a1625;
+    font-size: 1.1rem;
+  }
+
+  .seo-desc {
+    color: #5a5266;
+  }
+
+  .seo-steps li {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(225, 48, 108, 0.1);
+  }
+
+  .seo-steps li:hover {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .seo-steps li div strong {
+    color: #1a1625;
+  }
+
+  .seo-steps li div p {
+    color: #5a5266;
+  }
+
+  .seo-formats-grid { 
+    grid-template-columns: 1fr;
+  }
+
+  .seo-format-card {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(225, 48, 108, 0.1);
+  }
+
+  .seo-format-title {
+    color: #1a1625;
+  }
+
+  .seo-format-card ul li {
+    color: #5a5266;
+  }
+
+  .faq-item {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(225, 48, 108, 0.1);
+  }
+
+  .faq-item[open] {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(225, 48, 108, 0.2);
+  }
+
+  .faq-question {
+    color: #1a1625;
+  }
+
+  .faq-question::after {
+    color: #8b7d9a;
+  }
+
+  .faq-answer {
+    color: #5a5266;
+  }
+
+  /* ── Mobile legal section ── */
+  .legal-section { 
+    padding: 40px 16px 30px;
+    background: #f8f7fc;
+  }
+
+  .legal-card { 
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(225, 48, 108, 0.1);
+  }
+
+  .legal-card:hover {
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  .legal-card-title {
+    font-size: 0.75rem;
+  }
+
+  .legal-card p { 
+    font-size: 0.75rem;
+    color: #5a5266;
+  }
+
+  .legal-title {
+    color: #5a5266;
+  }
+
+  .legal-disclaimer {
+    color: #6b5a7a;
+  }
+
+  .legal-disclaimer strong {
+    color: #5a5266;
+  }
+
+  .legal-grid { 
+    grid-template-columns: 1fr; 
+  }
+
+  /* ── Mobile footer ── */
+  .page-footer {
+    background: #f8f7fc;
+    border-top: 1px solid rgba(225, 48, 108, 0.1);
+    color: #8b7d9a;
+  }
+
+  .footer-sep {
+    background: rgba(225, 48, 108, 0.15);
+  }
+
+  .shaft-1 { 
+    width: 260px; 
+    height: 260px; 
+  }
+
+  .shaft-2 { 
+    width: 300px; 
+    height: 200px; 
+  }
+
+  .shaft-3 { 
+    width: 220px; 
+    height: 220px; 
+  }
+
+  .seo-section { 
+    padding: 40px 16px 30px; 
+  }
+
+  .seo-inner { 
+    gap: 40px; 
+  }
+
+  .seo-steps li { 
+    padding: 12px 14px; 
+    gap: 12px; 
+  }
+
+  .faq-question { 
+    font-size: 0.8rem; 
+    padding: 12px 14px; 
+  }
+
+  .faq-answer { 
+    padding: 0 14px 12px; 
+  }
+
+  /* ── Mobile input progress override ── */
+  .input-progress-bar {
+    background: var(--grad-fusion);
+  }
 }
 
 /* ============================================================

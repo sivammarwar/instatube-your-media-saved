@@ -18,10 +18,9 @@ type FetchedVideo = {
   data: VideoData;
 };
 
-// Per-button download state — passed to ResultsArea
 export interface DownloadState {
   loading: boolean;
-  progress?: number;   // 0–100; undefined = indeterminate
+  progress?: number;
   phase?: "preparing" | "merging" | "saving";
 }
 
@@ -80,13 +79,21 @@ const FAQ_SCHEMA = {
   ]
 };
 
-/* ── Particle canvas ── */
+/* ── Desktop Particle Canvas ── */
 function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
+    // Hide canvas on mobile
+    const isMobile = window.innerWidth <= 480;
+    if (isMobile) {
+      canvas.style.display = "none";
+      return;
+    }
+
     const ctx = canvas.getContext("2d")!;
     let animId: number;
 
@@ -158,6 +165,10 @@ function useTilt(ref: React.RefObject<HTMLDivElement>) {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    
+    // Disable tilt on mobile
+    if (window.innerWidth <= 480) return;
+
     const onMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
       const cx = rect.left + rect.width  / 2;
@@ -184,37 +195,20 @@ function useTilt(ref: React.RefObject<HTMLDivElement>) {
   }, [ref]);
 }
 
-// ── Progress simulation ──────────────────────────────────────────────────────
-// Since the backend streams a binary file with a known Content-Length we can
-// track real XHR progress. For /api/download-direct there is no streaming, so
-// we simulate progress instead. This hook wires both together cleanly.
-
 type ProgressUpdater = (state: Partial<DownloadState>) => void;
 
-/**
- * Simulate indeterminate → determinate progress for a long-running task.
- * Returns a cleanup function that stops the simulation.
- *
- * Phases:
- *   0–20%  : "preparing" (fast, ~1 s)
- *   20–80% : "merging"   (slow, ~duration ms)
- *   80–99% : "saving"    (held until resolve)
- *   100%   : set externally after the fetch resolves
- */
 function simulateProgress(update: ProgressUpdater, durationMs = 25000): () => void {
   let raf: number;
   const start = Date.now();
 
   const PHASES = [
-    { until: 20,  phase: "preparing" as const, speed: 20  },   // 0–20  in ~1 s
-    { until: 80,  phase: "merging"   as const, speed: 60  },   // 20–80 in ~durationMs
-    { until: 99,  phase: "saving"    as const, speed: 19  },   // 80–99 in ~1 s
+    { until: 20,  phase: "preparing" as const, speed: 20  },
+    { until: 80,  phase: "merging"   as const, speed: 60  },
+    { until: 99,  phase: "saving"    as const, speed: 19  },
   ];
 
   function tick() {
     const elapsed = Date.now() - start;
-    // Map elapsed → progress using an eased curve
-    // 0–3 s = 0–20%, 3–(duration+3) s = 20–80%, then slow crawl to 99%
     let pct: number;
     let phase: DownloadState["phase"];
 
@@ -225,7 +219,6 @@ function simulateProgress(update: ProgressUpdater, durationMs = 25000): () => vo
       pct   = 20 + ((elapsed - 1000) / (durationMs - 1000)) * 60;
       phase = "merging";
     } else {
-      // Crawl asymptotically toward 99
       const extra = elapsed - durationMs;
       pct   = Math.min(99, 80 + (extra / 3000) * 19);
       phase = "saving";
@@ -244,12 +237,24 @@ export default function Index() {
   const [platform,  setPlatform]  = useState<Platform>(null);
   const [error,     setError]     = useState<string | null>(null);
   const [fetched,   setFetched]   = useState<FetchedVideo | null>(null);
-
-  // Keyed by item.url — supports DownloadState for the progress bar
   const [downloading, setDownloading] = useState<Record<string, DownloadState>>({});
+  const [logoError, setLogoError] = useState(false);
+  const [heroError, setHeroError] = useState(false);
+  const [featureError, setFeatureError] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
 
   const cardRef = useRef<HTMLDivElement>(null);
   useTilt(cardRef);
+
+  // Handle responsive image switching
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 480);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -287,7 +292,6 @@ export default function Index() {
     }
   };
 
-  // ── Download handler with progress tracking ──────────────────────────────
   const handleDownload = async (
     item: VideoResource & { type: "video" | "audio" },
     label: string,
@@ -296,14 +300,12 @@ export default function Index() {
     if (downloading[key]?.loading) return;
     if (!fetched) return;
 
-    // Helper to patch state for this key only
     const patchState = (patch: Partial<DownloadState>) =>
       setDownloading(prev => ({
         ...prev,
         [key]: { ...(prev[key] ?? { loading: true }), ...patch },
       }));
 
-    // Start — indeterminate until first progress tick
     patchState({ loading: true, progress: undefined, phase: "preparing" });
 
     const title   = fetched.data.title || "video";
@@ -325,7 +327,6 @@ export default function Index() {
       { id: key, description: label, style: toastStyle },
     );
 
-    // Start progress simulation (25 s expected merge time; adjust if needed)
     const stopProgress = simulateProgress(patchState, 25000);
 
     let result: { success: boolean; error?: string };
@@ -335,11 +336,8 @@ export default function Index() {
         result = await downloadDirect(pageUrl, title, undefined, "audio");
       } else {
         const qualityHeight = item.quality?.replace(/[^0-9]/g, "") || undefined;
-
-        // Method 1: yt-dlp re-fetches + merges server-side
         result = await downloadDirect(pageUrl, title, qualityHeight, "video");
 
-        // Method 2 fallback: pre-resolved CDN stream merge
         if (!result.success && fetched.data.audios.length > 0) {
           console.warn("[download] downloadDirect failed, falling back to stream merge:", result.error);
           toast.loading("Retrying with stream merge…", { id: key, description: label, style: toastStyle });
@@ -354,14 +352,12 @@ export default function Index() {
     }
 
     if (result.success) {
-      // Jump to 100% briefly before clearing
       patchState({ loading: false, progress: 100, phase: "saving" });
       toast.success("Download started", {
         id:          key,
         description: `Saving: ${title.slice(0, 40)}`,
         style:       toastStyle,
       });
-      // Clear progress after a short delay so the user sees the complete bar
       setTimeout(() => {
         setDownloading(prev => {
           const next = { ...prev };
@@ -448,6 +444,31 @@ export default function Index() {
           />
         </div>
 
+        {/* Hero Image Section - Responsive (Mobile & Desktop) */}
+        {!heroError && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="hero-image-wrapper fade-up fade-up-1"
+          >
+            <picture>
+              {/* Desktop Hero Banner - 1200x400 px */}
+              <source
+                media="(min-width: 481px)"
+                srcSet="/hero-banner_desktop.png"
+              />
+              {/* Mobile Hero Banner - 600x300 px */}
+              <img
+                src="/hero-banner_mobile.png"
+                alt="Download Instagram Reels and YouTube Videos Free"
+                className="hero-image"
+                onError={() => setHeroError(true)}
+              />
+            </picture>
+          </motion.div>
+        )}
+
         <AnimatePresence mode="wait">
           {appState === "results" && platform && fetched && (
             <ResultsArea
@@ -498,6 +519,24 @@ export default function Index() {
             <p className="seo-desc">
               Our free Instagram Reels downloader lets you save any public Reel in HD quality — no watermark, no account needed.
             </p>
+            
+            {/* Instagram Feature Image - 600x400 px */}
+            {!featureError && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                className="feature-image-wrapper"
+              >
+                <img
+                  src="/instagram-feature.png"
+                  alt="How to download Instagram Reels - Step by step guide"
+                  className="feature-image"
+                  onError={() => setFeatureError(true)}
+                />
+              </motion.div>
+            )}
+
             <ol className="seo-steps">
               <li>
                 <span className="step-num">1</span>
@@ -528,6 +567,24 @@ export default function Index() {
             <p className="seo-desc">
               Use our free YouTube video downloader to save any YouTube video in MP4 format up to 4K, or extract audio as MP3.
             </p>
+
+            {/* YouTube Feature Image - 600x400 px */}
+            {!featureError && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                className="feature-image-wrapper"
+              >
+                <img
+                  src="/youtube-feature.png"
+                  alt="How to download YouTube videos - Step by step guide"
+                  className="feature-image"
+                  onError={() => setFeatureError(true)}
+                />
+              </motion.div>
+            )}
+
             <ol className="seo-steps">
               <li>
                 <span className="step-num">1</span>
