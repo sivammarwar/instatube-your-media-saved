@@ -767,7 +767,27 @@ h1.logo-text {
   color: var(--text-secondary);
 }
 
-.dl-progress-track {
+.dl-progress-speed {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted-accessible);
+  letter-spacing: 0.02em;
+}
+
+.dl-progress-size-row {
+  display: flex;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.dl-progress-size-info {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
   position: relative;
   height: 4px;
   border-radius: 99px;
@@ -1323,6 +1343,18 @@ h1.logo-text {
     font-size: 0.66rem;
     font-weight: 800;
     color: #cc0000;
+  }
+  .dl-progress-speed {
+    font-size: 0.64rem;
+    font-weight: 600;
+    color: #7c6b8a;
+  }
+  .dl-progress-size-row {
+    margin-top: 5px;
+  }
+  .dl-progress-size-info {
+    font-size: 0.62rem;
+    color: #8b7d9a;
   }
   .dl-progress-track {
     height: 6px;

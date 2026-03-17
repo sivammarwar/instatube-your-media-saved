@@ -1,12 +1,6 @@
 // lib/api.ts
 // API client for communicating with FreeReelsDownloader backend
 
-// Priority:
-// 1. Explicit env var (always set this in Vercel: REACT_APP_API_URL)
-// 2. If running on Railway itself (rare — frontend co-deployed with backend)
-// 3. Local dev fallback — NEVER reached in production if env var is set
-// Vite exposes env vars via import.meta.env with VITE_ prefix.
-// Set VITE_API_URL in Vercel: Settings → Environment Variables
 const BASE_URL = (() => {
   if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL as string;
   if (typeof window !== 'undefined') {
@@ -24,6 +18,7 @@ export interface VideoResource {
   format?: string;
   sizeMB?: number;
   directUrl?: boolean;
+  audioUrl?: string; // attached by server for video-only streams
 }
 
 export interface VideoData {
@@ -40,12 +35,15 @@ export interface ApiResponse<T> {
   data?: T;
 }
 
+/** Called repeatedly during download with bytes received and total (if known) */
+export type ProgressCallback = (received: number, total: number | null) => void;
+
 export function getApiBase(): string {
   return BASE_URL;
 }
 
 // ─────────────────────────────────────────────────────────
-// fetchVideoData — unchanged, works correctly
+// fetchVideoData
 // ─────────────────────────────────────────────────────────
 export async function fetchVideoData(url: string): Promise<ApiResponse<VideoData>> {
   try {
@@ -60,27 +58,27 @@ export async function fetchVideoData(url: string): Promise<ApiResponse<VideoData
     }
 
     const result = await response.json();
-
     if (!result.success) {
       return { success: false, error: result.error || 'Failed to fetch video data' };
     }
 
     const videoData: VideoData = {
-      title: result.data.title,
+      title:    result.data.title,
       duration: result.data.duration,
       thumbnail: result.data.thumbnail,
       videos: (result.data.videos || []).map((v: any) => ({
-        url: v.url || '',
-        quality: v.quality,
-        format: v.format,
-        sizeMB: v.sizeMB,
+        url:      v.url || '',
+        quality:  v.quality,
+        format:   v.format,
+        sizeMB:   v.sizeMB,
         directUrl: v.directUrl,
+        audioUrl: v.audioUrl || null,
       })),
       audios: (result.data.audios || []).map((a: any) => ({
-        url: a.url || '',
-        quality: a.quality,
-        format: a.format,
-        sizeMB: a.sizeMB,
+        url:      a.url || '',
+        quality:  a.quality,
+        format:   a.format,
+        sizeMB:   a.sizeMB,
         directUrl: a.directUrl,
       })),
     };
@@ -93,21 +91,115 @@ export async function fetchVideoData(url: string): Promise<ApiResponse<VideoData
 }
 
 // ─────────────────────────────────────────────────────────
-// downloadVideoWithAudio — Method A (RECOMMENDED FOR QUICK DOWNLOADS)
-// Sends pre-resolved CDN video + audio URLs to the backend.
-// Backend uses ffmpeg to merge them with stream copy (fastest).
+// CORE: streamingDownload
 //
-// Use this when you already have videoUrl + audioUrl from
-// the /api/video-info response. Much faster than re-encoding.
+// Streams the response body chunk-by-chunk into a Blob,
+// reporting progress as bytes arrive.
+//
+// For browsers that support showSaveFilePicker (Chrome 86+),
+// we stream directly to disk — zero memory spike.
+// For others we fall back to the classic blob URL trick,
+// but still show accurate progress while downloading.
+// ─────────────────────────────────────────────────────────
+async function streamingDownload(
+  response: Response,
+  filename: string,
+  onProgress: ProgressCallback,
+): Promise<void> {
+  const contentLength = response.headers.get('Content-Length');
+  const total = contentLength ? parseInt(contentLength, 10) : null;
+
+  // ── Path A: File System Access API (Chrome 86+, Edge 86+) ──
+  // Streams directly to disk — no RAM spike, best for large files
+  if (
+    typeof window !== 'undefined' &&
+    'showSaveFilePicker' in window &&
+    response.body
+  ) {
+    try {
+      const ext = filename.split('.').pop() || 'mp4';
+      const mimeMap: Record<string, string> = {
+        mp4: 'video/mp4', m4a: 'audio/mp4', mp3: 'audio/mpeg', webm: 'video/webm',
+      };
+      const fileHandle = await (window as any).showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description: 'Media file', accept: { [mimeMap[ext] || 'video/mp4']: [`.${ext}`] } }],
+      });
+      const writable = await fileHandle.createWritable();
+      const reader = response.body.getReader();
+      let received = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await writable.write(value);
+        received += value.byteLength;
+        onProgress(received, total);
+      }
+
+      await writable.close();
+      onProgress(total ?? received, total ?? received); // 100%
+      return;
+    } catch (err: any) {
+      // User cancelled the save dialog — treat as abort
+      if (err?.name === 'AbortError') throw err;
+      // Any other error (permissions, quota) → fall through to blob path
+      console.warn('[api] showSaveFilePicker failed, falling back to blob:', err?.message);
+    }
+  }
+
+  // ── Path B: Streaming into memory with progress, then blob URL ──
+  // Works on all browsers including mobile Safari
+  if (response.body) {
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let received = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.byteLength;
+      onProgress(received, total);
+    }
+
+    onProgress(total ?? received, total ?? received);
+    const blob = new Blob(chunks);
+    triggerBlobSave(blob, filename);
+    return;
+  }
+
+  // ── Path C: Last resort — read entire response as blob (no progress) ──
+  const blob = await response.blob();
+  onProgress(blob.size, blob.size);
+  triggerBlobSave(blob, filename);
+}
+
+function triggerBlobSave(blob: Blob, filename: string): void {
+  const blobUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
+}
+
+// ─────────────────────────────────────────────────────────
+// downloadVideoWithAudio — Method A
+// Sends pre-resolved CDN video + audio URLs to backend.
+// Backend streams ffmpeg merge directly — zero disk on server.
 // ─────────────────────────────────────────────────────────
 export async function downloadVideoWithAudio(
   videoUrl: string,
   audioUrl: string,
   title: string,
   platform?: string,
+  onProgress?: ProgressCallback,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('[api] downloadVideoWithAudio — sending pre-resolved URLs to backend');
+    console.log('[api] downloadVideoWithAudio — streaming merge');
 
     const response = await fetch(`${BASE_URL}/api/download`, {
       method: 'POST',
@@ -120,35 +212,33 @@ export async function downloadVideoWithAudio(
       return { success: false, error: errorData.error || `Server error: ${response.status}` };
     }
 
-    await saveBlobFromResponse(response, `${sanitizeFilename(title)}.mp4`);
+    await streamingDownload(
+      response,
+      `${sanitizeFilename(title)}.mp4`,
+      onProgress ?? (() => {}),
+    );
     return { success: true };
-  } catch (error) {
-    console.error('[api] downloadVideoWithAudio error:', error);
+  } catch (err: any) {
+    if (err?.name === 'AbortError') return { success: false, error: 'Download cancelled.' };
+    console.error('[api] downloadVideoWithAudio error:', err);
     return { success: false, error: 'Download failed. Please try again.' };
   }
 }
 
 // ─────────────────────────────────────────────────────────
-// downloadDirect — Method B (FALLBACK / HIGHEST QUALITY)
-// Sends the original page URL + quality to the backend.
-// Backend uses yt-dlp to fetch best video+audio combo.
-//
-// More reliable when:
-//  - CDN URLs from /api/video-info are expired
-//  - Best muxed format is needed (higher quality audio)
-//  - Age-restricted or geolocked content
-//
-// quality: "1080" | "720" | "480" | "360" | undefined (= best)
-// type:    "video" | "audio"
+// downloadDirect — Method B
+// Sends page URL + quality to backend (yt-dlp downloads
+// and streams the merged file back).
 // ─────────────────────────────────────────────────────────
 export async function downloadDirect(
   pageUrl: string,
   title: string,
   quality?: string,
   type: 'video' | 'audio' = 'video',
+  onProgress?: ProgressCallback,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log(`[api] downloadDirect — quality=${quality} type=${type} url=${pageUrl.slice(0, 60)}`);
+    console.log(`[api] downloadDirect — quality=${quality} type=${type}`);
 
     const response = await fetch(`${BASE_URL}/api/download-direct`, {
       method: 'POST',
@@ -162,50 +252,36 @@ export async function downloadDirect(
     }
 
     const ext = type === 'audio' ? 'm4a' : 'mp4';
-    await saveBlobFromResponse(response, `${sanitizeFilename(title)}.${ext}`);
+    await streamingDownload(
+      response,
+      `${sanitizeFilename(title)}.${ext}`,
+      onProgress ?? (() => {}),
+    );
     return { success: true };
-  } catch (error) {
-    console.error('[api] downloadDirect error:', error);
+  } catch (err: any) {
+    if (err?.name === 'AbortError') return { success: false, error: 'Download cancelled.' };
+    console.error('[api] downloadDirect error:', err);
     return { success: false, error: 'Download failed. Please try again.' };
   }
 }
 
 // ─────────────────────────────────────────────────────────
-// triggerDownload — AUDIO-ONLY helper
-// Only use this for audio-only streams where the single URL
-// already contains audio (e.g. Instagram audio-only format).
-// NEVER call this with a video CDN URL — it will be silent.
+// triggerDownload — audio-only helper (unchanged)
 // ─────────────────────────────────────────────────────────
 export async function triggerDownload(
   downloadUrl: string,
   filename: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    console.warn('[api] triggerDownload called — only use for audio-only streams');
     const response = await fetch(downloadUrl);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    await saveBlobFromResponse(response, filename);
+    const blob = await response.blob();
+    triggerBlobSave(blob, filename);
     return { success: true };
   } catch (error) {
     console.error('[api] triggerDownload error:', error);
     return { success: false, error: 'Download failed. Please try again.' };
   }
-}
-
-// ─────────────────────────────────────────────────────────
-// Internal helpers
-// ─────────────────────────────────────────────────────────
-
-async function saveBlobFromResponse(response: Response, filename: string): Promise<void> {
-  const blob = await response.blob();
-  const blobUrl = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = blobUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
 }
 
 function sanitizeFilename(title: string): string {
