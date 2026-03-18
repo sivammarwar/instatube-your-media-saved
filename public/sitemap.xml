@@ -28,7 +28,6 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- NEW: Instagram Reel HD Quality Downloader -->
   <url>
     <loc>https://www.freereelsdownloader.com/instagram-reel-downloader-hd-quality</loc>
     <lastmod>2025-03-16</lastmod>
@@ -36,7 +35,6 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- NEW: Instagram Photo Saver -->
   <url>
     <loc>https://www.freereelsdownloader.com/instagram-photo-saver</loc>
     <lastmod>2025-03-16</lastmod>
@@ -44,10 +42,39 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- NEW: Instagram Story Saver -->
   <url>
     <loc>https://www.freereelsdownloader.com/instagram-story-saver</loc>
     <lastmod>2025-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Batch 6A — Instagram primary -->
+  <url>
+    <loc>https://www.freereelsdownloader.com/instagram-bulk-video-downloader</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/instagram-hd-video-downloader</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Batch 7B — Instagram primary -->
+  <url>
+    <loc>https://www.freereelsdownloader.com/instagram-bulk-downloader</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/instagram-video-downloader-hd</loc>
+    <lastmod>2025-03-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -76,7 +103,6 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- NEW: YouTube to MP4 HD Converter -->
   <url>
     <loc>https://www.freereelsdownloader.com/youtube-to-mp4-converter-hd</loc>
     <lastmod>2025-03-16</lastmod>
@@ -84,7 +110,6 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- NEW: YouTube to MP3 Free -->
   <url>
     <loc>https://www.freereelsdownloader.com/youtube-to-mp3-free</loc>
     <lastmod>2025-03-16</lastmod>
@@ -92,10 +117,39 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- NEW: YouTube Shorts Saver -->
   <url>
     <loc>https://www.freereelsdownloader.com/youtube-shorts-saver</loc>
     <lastmod>2025-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Batch 6A — YouTube primary -->
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-mp4-1080p-download</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/convert-youtube-video-to-mp3</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Batch 7B — YouTube primary -->
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-to-mp4-1080p</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-video-to-mp3-converter</loc>
+    <lastmod>2025-03-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -195,22 +249,62 @@
   </url>
 
   <url>
-    <loc>https://www.freereelsdownloader.com/instagram-story-saver</loc>
-    <lastmod>2025-03-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://www.freereelsdownloader.com/instagram-photo-saver</loc>
-    <lastmod>2025-03-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
     <loc>https://www.freereelsdownloader.com/instagram-reel-audio-extractor</loc>
     <lastmod>2025-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/instagram-reel-downloader-hd</loc>
+    <lastmod>2025-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/instagram-story-saver-free</loc>
+    <lastmod>2025-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/instagram-photo-save</loc>
+    <lastmod>2025-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Batch 6A — Instagram secondary -->
+  <url>
+    <loc>https://www.freereelsdownloader.com/instagram-reels-audio-extractor-mp3</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/download-reels-online-free</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Batch 7B — Instagram secondary -->
+  <url>
+    <loc>https://www.freereelsdownloader.com/instagram-reels-to-mp3</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+ 
+  <url>
+    <loc>https://www.freereelsdownloader.com/download-instagram-reels-online</loc>
+    <lastmod>2025-03-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -317,27 +411,6 @@
   </url>
 
   <url>
-    <loc>https://www.freereelsdownloader.com/youtube-to-mp4-converter-hd</loc>
-    <lastmod>2025-03-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://www.freereelsdownloader.com/youtube-to-mp3-free</loc>
-    <lastmod>2025-03-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://www.freereelsdownloader.com/youtube-shorts-saver</loc>
-    <lastmod>2025-03-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
     <loc>https://www.freereelsdownloader.com/youtube-playlist-video-downloader</loc>
     <lastmod>2025-03-16</lastmod>
     <changefreq>monthly</changefreq>
@@ -352,8 +425,66 @@
   </url>
 
   <url>
-    <loc>https://www.freereelsdownloader.com/youtube-shorts-saver</loc>
+    <loc>https://www.freereelsdownloader.com/youtube-to-mp4-hd</loc>
     <lastmod>2025-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-mp3-free</loc>
+    <lastmod>2025-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-shorts-save</loc>
+    <lastmod>2025-03-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Batch 6A — YouTube secondary -->
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-live-downloader</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-embed-downloader</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-shorts-mp3-converter</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Batch 7B — YouTube secondary -->
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-live-stream-downloader</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-embed-video-downloader</loc>
+    <lastmod>2025-03-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.freereelsdownloader.com/youtube-shorts-to-mp3</loc>
+    <lastmod>2025-03-18</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -382,19 +513,7 @@
     <priority>0.7</priority>
   </url>
 
-  <url>
-    <loc>https://www.freereelsdownloader.com/instagram-saved-posts-downloader</loc>
-    <lastmod>2025-01-01</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://www.freereelsdownloader.com/instagram-reel-downloader-hd-quality</loc>
-    <lastmod>2025-03-16</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
+  
 
   <!-- ═══════════════════════════════════════════
        YOUTUBE — TERTIARY / LONG-TAIL  (priority 0.7)
