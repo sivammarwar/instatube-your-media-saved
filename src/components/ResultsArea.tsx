@@ -181,6 +181,8 @@ const ResultsArea = ({
   downloading: externalDownloading,
 }: ResultsAreaProps) => {
   const { videos, audios, thumbnail, title } = videoData;
+
+  console.log("[ResultsArea] videos:", videos, "audios:", audios, "pageUrl:", pageUrl);
   const [thumbError,       setThumbError]       = React.useState(false);
   // Internal download state — used when onDownload prop is NOT provided (Index.tsx)
   const [internalState, setInternalState] = React.useState<Record<string, DownloadState>>({});
