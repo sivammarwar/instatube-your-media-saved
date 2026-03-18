@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import React from "react";
 import type { Platform } from "./InputStage";
 import type { VideoData, VideoResource, ProgressCallback } from "@/lib/api";
-import { downloadVideoWithAudio, downloadDirect } from "@/lib/api";
+import { downloadVideoWithAudio, downloadDirect, downloadInstagramMedia } from "@/lib/api";
 
 // ─────────────────────────────────────────────────────────
 // DownloadState — exported so DownloadEngine.tsx can import it
@@ -181,8 +181,6 @@ const ResultsArea = ({
   downloading: externalDownloading,
 }: ResultsAreaProps) => {
   const { videos, audios, thumbnail, title } = videoData;
-
-  console.log("[ResultsArea] videos:", videos, "audios:", audios, "pageUrl:", pageUrl);
   const [thumbError,       setThumbError]       = React.useState(false);
   // Internal download state — used when onDownload prop is NOT provided (Index.tsx)
   const [internalState, setInternalState] = React.useState<Record<string, DownloadState>>({});
@@ -238,6 +236,17 @@ const ResultsArea = ({
 
         if (item.type === "audio") {
           result = await downloadDirect(pageUrl, title || "audio", undefined, "audio", onProgress);
+
+        } else if (platform === "instagram" && item.directUrl && item.url) {
+          // Instagram direct CDN URL — proxy it, never run yt-dlp on a CDN URL
+          result = await downloadInstagramMedia({
+            url:      item.url,
+            audioUrl: (item as any).audioUrl ?? undefined,
+            title:    title || "instagram_media",
+            type:     (item as any).isImage ? "image" : "video",
+            onProgress,
+          });
+
         } else {
           const matchingAudio = audios.length > 0 ? audios[0] : null;
           if (matchingAudio?.url && item.url) {
