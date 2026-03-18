@@ -1,106 +1,99 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import InputStage, { type Platform } from "@/components/InputStage";
+import InputStage, { detectInstagramType, type Platform } from "@/components/InputStage";
 import ResultsArea from "@/components/ResultsArea";
+import InstagramProfileArea from "@/components/InstagramProfileArea";
 import {
   fetchVideoData,
-  downloadDirect,
-  downloadVideoWithAudio,
+  fetchInstagramProfile,
   type VideoData,
-  type VideoResource,
+  type IgProfileData,
 } from "@/lib/api";
-import { toast } from "sonner";
 
-type AppState = "idle" | "loading" | "results";
+// ─────────────────────────────────────────────────────────
+// App state
+// ─────────────────────────────────────────────────────────
+type AppState = "idle" | "loading" | "results" | "ig-profile";
 
-type FetchedVideo = {
-  pageUrl: string;
-  data: VideoData;
-};
+type FetchedVideo = { pageUrl: string; data: VideoData };
 
-export interface DownloadState {
-  loading: boolean;
-  progress?: number;
-  phase?: "preparing" | "merging" | "saving";
-}
+// Instagram content types that go through fetchInstagramProfile
+const IG_PROFILE_TYPES = new Set([
+  "stories_batch",
+  "highlight",
+  "profile",
+] as const);
 
 const FAQ_SCHEMA = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
-  "mainEntity": [
+  mainEntity: [
     {
       "@type": "Question",
-      "name": "How do I download Instagram Reels for free?",
-      "acceptedAnswer": {
+      name: "How do I download Instagram Reels for free?",
+      acceptedAnswer: {
         "@type": "Answer",
-        "text": "Copy the Instagram Reel URL, paste it into the FreeReelsDownloader input box, and click Fetch. Your download links will appear instantly. No login or account required."
-      }
+        text: "Copy the Instagram Reel URL, paste it into the FreeReelsDownloader input box, and click Fetch. Your download links will appear instantly. No login or account required.",
+      },
     },
     {
       "@type": "Question",
-      "name": "How do I download YouTube videos online?",
-      "acceptedAnswer": {
+      name: "How do I download YouTube videos online?",
+      acceptedAnswer: {
         "@type": "Answer",
-        "text": "Copy the YouTube video URL, paste it into our free YouTube video downloader, and choose your preferred quality (up to 4K). The download starts immediately with no watermark."
-      }
+        text: "Copy the YouTube video URL, paste it into our free YouTube video downloader, and choose your preferred quality (up to 4K). The download starts immediately with no watermark.",
+      },
     },
     {
       "@type": "Question",
-      "name": "Is this Instagram and YouTube video downloader free?",
-      "acceptedAnswer": {
+      name: "Is this Instagram and YouTube video downloader free?",
+      acceptedAnswer: {
         "@type": "Answer",
-        "text": "Yes, FreeReelsDownloader is completely free to use. There are no hidden charges, no subscription, and no login required."
-      }
+        text: "Yes, FreeReelsDownloader is completely free to use. There are no hidden charges, no subscription, and no login required.",
+      },
     },
     {
       "@type": "Question",
-      "name": "What video formats and qualities are supported?",
-      "acceptedAnswer": {
+      name: "What video formats and qualities are supported?",
+      acceptedAnswer: {
         "@type": "Answer",
-        "text": "We support MP4 video downloads up to 4K quality and MP3 audio extraction for YouTube videos. For Instagram, we support Reels, Stories, Posts, and IGTV in HD quality."
-      }
+        text: "We support MP4 video downloads up to 4K quality and MP3 audio extraction for YouTube videos. For Instagram, we support Reels, Stories, Posts, Carousels, Highlights, and profile posts in HD quality.",
+      },
     },
     {
       "@type": "Question",
-      "name": "Can I download Instagram Reels without watermark?",
-      "acceptedAnswer": {
+      name: "Can I download Instagram Reels without watermark?",
+      acceptedAnswer: {
         "@type": "Answer",
-        "text": "Yes, all Instagram Reels downloaded through FreeReelsDownloader are watermark-free. The video is saved exactly as the original public post."
-      }
+        text: "Yes, all Instagram Reels downloaded through FreeReelsDownloader are watermark-free. The video is saved exactly as the original public post.",
+      },
     },
     {
       "@type": "Question",
-      "name": "Is it safe to use this video downloader?",
-      "acceptedAnswer": {
+      name: "Is it safe to use this video downloader?",
+      acceptedAnswer: {
         "@type": "Answer",
-        "text": "Yes. We do not store any video data or personal information on our servers. All downloads stream directly to your device. We also do not require any account or login."
-      }
-    }
-  ]
+        text: "Yes. We do not store any video data or personal information on our servers. All downloads stream directly to your device. We also do not require any account or login.",
+      },
+    },
+  ],
 };
 
-/* ── Desktop Particle Canvas ── */
+// ─────────────────────────────────────────────────────────
+// Particle canvas (desktop only)
+// ─────────────────────────────────────────────────────────
 function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
-    // Hide canvas on mobile
-    const isMobile = window.innerWidth <= 480;
-    if (isMobile) {
-      canvas.style.display = "none";
-      return;
-    }
+    if (window.innerWidth <= 480) { canvas.style.display = "none"; return; }
 
     const ctx = canvas.getContext("2d")!;
     let animId: number;
 
-    const resize = () => {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
     window.addEventListener("resize", resize);
 
@@ -141,7 +134,7 @@ function ParticleCanvas() {
             ctx.lineTo(particles[j].x, particles[j].y);
             ctx.strokeStyle = particles[i].color;
             ctx.globalAlpha = (1 - dist / 100) * 0.08;
-            ctx.lineWidth = 0.5;
+            ctx.lineWidth   = 0.5;
             ctx.stroke();
             ctx.globalAlpha = 1;
           }
@@ -151,39 +144,29 @@ function ParticleCanvas() {
     };
     draw();
 
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("resize", resize);
-    };
+    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); };
   }, []);
 
   return <canvas ref={canvasRef} id="bg-canvas" />;
 }
 
-/* ── 3D tilt on mouse move ── */
+// ─────────────────────────────────────────────────────────
+// 3-D tilt on mouse move (desktop only)
+// ─────────────────────────────────────────────────────────
 function useTilt(ref: React.RefObject<HTMLDivElement>) {
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    
-    // Disable tilt on mobile
-    if (window.innerWidth <= 480) return;
+    if (!el || window.innerWidth <= 480) return;
 
     const onMove = (e: MouseEvent) => {
       const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width  / 2;
-      const cy = rect.top  + rect.height / 2;
-      const dx = (e.clientX - cx) / (rect.width  / 2);
-      const dy = (e.clientY - cy) / (rect.height / 2);
+      const dx = (e.clientX - rect.left - rect.width  / 2) / (rect.width  / 2);
+      const dy = (e.clientY - rect.top  - rect.height / 2) / (rect.height / 2);
       el.style.transform = `perspective(1000px) rotateY(${dx * 4}deg) rotateX(${-dy * 4}deg)`;
     };
-    const onLeave = () => {
-      el.style.transform  = "perspective(1000px) rotateY(0deg) rotateX(0deg)";
-      el.style.transition = "transform 0.6s cubic-bezier(0.16,1,0.3,1)";
-    };
-    const onEnter = () => {
-      el.style.transition = "transform 0.1s ease-out";
-    };
+    const onLeave = () => { el.style.transform = "perspective(1000px) rotateY(0deg) rotateX(0deg)"; el.style.transition = "transform 0.6s cubic-bezier(0.16,1,0.3,1)"; };
+    const onEnter = () => { el.style.transition = "transform 0.1s ease-out"; };
+
     el.addEventListener("mousemove",  onMove);
     el.addEventListener("mouseleave", onLeave);
     el.addEventListener("mouseenter", onEnter);
@@ -195,83 +178,77 @@ function useTilt(ref: React.RefObject<HTMLDivElement>) {
   }, [ref]);
 }
 
-type ProgressUpdater = (state: Partial<DownloadState>) => void;
-
-function simulateProgress(update: ProgressUpdater, durationMs = 25000): () => void {
-  let raf: number;
-  const start = Date.now();
-
-  function tick() {
-    const elapsed = Date.now() - start;
-    let pct: number;
-    let phase: DownloadState["phase"];
-
-    if (elapsed < 1000) {
-      pct   = (elapsed / 1000) * 20;
-      phase = "preparing";
-    } else if (elapsed < durationMs) {
-      pct   = 20 + ((elapsed - 1000) / (durationMs - 1000)) * 60;
-      phase = "merging";
-    } else {
-      const extra = elapsed - durationMs;
-      pct   = Math.min(99, 80 + (extra / 3000) * 19);
-      phase = "saving";
-    }
-
-    update({ progress: Math.round(pct), phase });
-    raf = requestAnimationFrame(tick);
-  }
-
-  raf = requestAnimationFrame(tick);
-  return () => cancelAnimationFrame(raf);
-}
-
+// ─────────────────────────────────────────────────────────
+// Page component
+// ─────────────────────────────────────────────────────────
 export default function Index() {
-  const [appState,  setAppState]  = useState<AppState>("idle");
-  const [platform,  setPlatform]  = useState<Platform>(null);
-  const [error,     setError]     = useState<string | null>(null);
-  const [fetched,   setFetched]   = useState<FetchedVideo | null>(null);
-  const [downloading, setDownloading] = useState<Record<string, DownloadState>>({});
-  const [logoError, setLogoError] = useState(false);
-  const [heroError, setHeroError] = useState(false);
+  const [appState,     setAppState]     = useState<AppState>("idle");
+  const [platform,     setPlatform]     = useState<Platform>(null);
+  const [error,        setError]        = useState<string | null>(null);
+  // Single-item results (YT video, single IG reel/post)
+  const [fetched,      setFetched]      = useState<FetchedVideo | null>(null);
+  // Batch results (IG stories, highlights, profile)
+  const [igProfile,    setIgProfile]    = useState<IgProfileData | null>(null);
+  // Image error guards
+  const [logoError,    setLogoError]    = useState(false);   // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [heroError,    setHeroError]    = useState(false);
   const [featureError, setFeatureError] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+  const [isMobile,     setIsMobile]     = useState(window.innerWidth <= 480);
 
   const cardRef = useRef<HTMLDivElement>(null);
   useTilt(cardRef);
 
-  // Handle responsive image switching
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 480);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const fn = () => setIsMobile(window.innerWidth <= 480);
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
   }, []);
 
+  // Inject FAQ schema
   useEffect(() => {
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.text = JSON.stringify(FAQ_SCHEMA);
-    script.id   = "faq-schema";
+    const script    = document.createElement("script");
+    script.type     = "application/ld+json";
+    script.text     = JSON.stringify(FAQ_SCHEMA);
+    script.id       = "faq-schema";
     if (!document.getElementById("faq-schema")) document.head.appendChild(script);
-    return () => {
-      const el = document.getElementById("faq-schema");
-      if (el) document.head.removeChild(el);
-    };
+    return () => { const el = document.getElementById("faq-schema"); if (el) document.head.removeChild(el); };
   }, []);
 
+  // ── handleSubmit ──────────────────────────────────────
   const handleSubmit = async (url: string, detectedPlatform: Platform) => {
     setError(null);
     if (!detectedPlatform) {
       setError("Check your link — we support Instagram and YouTube.");
       return;
     }
+
     setPlatform(detectedPlatform);
     setAppState("loading");
     setFetched(null);
+    setIgProfile(null);
+
     try {
+      // ── Instagram routing ─────────────────────────────
+      if (detectedPlatform === "instagram") {
+        const igType = detectInstagramType(url);
+
+        if (igType && IG_PROFILE_TYPES.has(igType as any)) {
+          // Batch content: stories batch / highlights / profile page
+          const result = await fetchInstagramProfile({ url, type: igType as any });
+          if (!result.success || !result.data) {
+            setError(result.error || "Could not fetch Instagram content. Please check the link.");
+            setAppState("idle");
+            return;
+          }
+          setIgProfile(result.data);
+          setAppState("ig-profile");
+          return;
+        }
+
+        // Single post / reel / story / tv → fall through to fetchVideoData
+      }
+
+      // ── YouTube + single IG items ─────────────────────
       const result = await fetchVideoData(url);
       if (!result.success || !result.data) {
         setError(result.error || "Could not fetch video. Please check the link.");
@@ -280,92 +257,10 @@ export default function Index() {
       }
       setFetched({ pageUrl: url, data: result.data });
       setAppState("results");
+
     } catch {
       setError("Something went wrong. Please try again.");
       setAppState("idle");
-    }
-  };
-
-  const handleDownload = async (
-    item: VideoResource & { type: "video" | "audio" },
-    label: string,
-  ) => {
-    const key = item.url;
-    if (downloading[key]?.loading) return;
-    if (!fetched) return;
-
-    const patchState = (patch: Partial<DownloadState>) =>
-      setDownloading(prev => ({
-        ...prev,
-        [key]: { ...(prev[key] ?? { loading: true }), ...patch },
-      }));
-
-    patchState({ loading: true, progress: undefined, phase: "preparing" });
-
-    const title   = fetched.data.title || "video";
-    const pageUrl = fetched.pageUrl;
-
-    const toastStyle = {
-      background: "rgba(6,8,16,0.95)",
-      border:     "1px solid rgba(0,245,255,0.2)",
-      color:      "#eef2ff",
-    };
-    const toastErrorStyle = {
-      background: "rgba(40,10,10,0.95)",
-      border:     "1px solid rgba(255,60,60,0.3)",
-      color:      "#fca5a5",
-    };
-
-    toast.loading(
-      item.type === "video" ? "Preparing download…" : "Preparing audio…",
-      { id: key, description: label, style: toastStyle },
-    );
-
-    const stopProgress = simulateProgress(patchState, 25000);
-
-    let result: { success: boolean; error?: string };
-
-    try {
-      if (item.type === "audio") {
-        result = await downloadDirect(pageUrl, title, undefined, "audio");
-      } else {
-        const qualityHeight = item.quality?.replace(/[^0-9]/g, "") || undefined;
-        result = await downloadDirect(pageUrl, title, qualityHeight, "video");
-
-        if (!result.success && fetched.data.audios.length > 0) {
-          console.warn("[download] downloadDirect failed, falling back to stream merge:", result.error);
-          toast.loading("Retrying with stream merge…", { id: key, description: label, style: toastStyle });
-          patchState({ phase: "merging", progress: undefined });
-
-          const bestAudio = fetched.data.audios[0];
-          result = await downloadVideoWithAudio(item.url, bestAudio.url, title, platform ?? undefined);
-        }
-      }
-    } finally {
-      stopProgress();
-    }
-
-    if (result.success) {
-      patchState({ loading: false, progress: 100, phase: "saving" });
-      toast.success("Download started", {
-        id:          key,
-        description: `Saving: ${title.slice(0, 40)}`,
-        style:       toastStyle,
-      });
-      setTimeout(() => {
-        setDownloading(prev => {
-          const next = { ...prev };
-          delete next[key];
-          return next;
-        });
-      }, 1800);
-    } else {
-      patchState({ loading: false, progress: undefined, phase: undefined });
-      toast.error("Download failed", {
-        id:          key,
-        description: result.error || "Please try again.",
-        style:       toastErrorStyle,
-      });
     }
   };
 
@@ -374,8 +269,10 @@ export default function Index() {
     setPlatform(null);
     setError(null);
     setFetched(null);
-    setDownloading({});
+    setIgProfile(null);
   };
+
+  const isLoading = appState === "loading";
 
   return (
     <div className="page-root">
@@ -408,9 +305,10 @@ export default function Index() {
               transition={{ duration: 0.22 }}
               className="header-tagline"
             >
-              {appState === "idle"    && "Download Instagram Reels and YouTube videos free — no login, no watermark, up to 4K quality."}
-              {appState === "loading" && "Fetching your video download links…"}
-              {appState === "results" && (fetched?.data.title || "Your video is ready to download.")}
+              {appState === "idle"       && "Download Instagram Reels, posts, stories and YouTube videos free — no login, no watermark, up to 4K quality."}
+              {appState === "loading"    && "Fetching your video download links…"}
+              {appState === "results"    && (fetched?.data.title || "Your video is ready to download.")}
+              {appState === "ig-profile" && (igProfile?.username ? `@${igProfile.username} · ${igProfile.items.length} item${igProfile.items.length !== 1 ? "s" : ""} found` : "Instagram content ready.")}
             </motion.p>
           </AnimatePresence>
 
@@ -433,12 +331,12 @@ export default function Index() {
         <div ref={cardRef} className="tilt-card fade-up fade-up-1">
           <InputStage
             onSubmit={handleSubmit}
-            isLoading={appState === "loading"}
+            isLoading={isLoading}
             error={error}
           />
         </div>
 
-        {/* Hero Image Section - Responsive (Mobile & Desktop) */}
+        {/* Hero image (responsive) */}
         {!heroError && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -447,12 +345,7 @@ export default function Index() {
             className="hero-image-wrapper fade-up fade-up-1"
           >
             <picture>
-              {/* Desktop Hero Banner - 1200x400 px */}
-              <source
-                media="(min-width: 481px)"
-                srcSet="/hero-banner_desktop.png"
-              />
-              {/* Mobile Hero Banner - 600x300 px */}
+              <source media="(min-width: 481px)" srcSet="/hero-banner_desktop.png" />
               <img
                 src="/hero-banner_mobile.png"
                 alt="Download Instagram Reels and YouTube Videos Free"
@@ -463,19 +356,29 @@ export default function Index() {
           </motion.div>
         )}
 
+        {/* ── Results: YouTube / single IG item ── */}
         <AnimatePresence mode="wait">
           {appState === "results" && platform && fetched && (
             <ResultsArea
               platform={platform}
               videoData={fetched.data}
-              onDownload={handleDownload}
               onReset={handleReset}
-              downloading={downloading}
               pageUrl={fetched.pageUrl}
             />
           )}
         </AnimatePresence>
 
+        {/* ── Results: Instagram batch / profile / stories / highlights ── */}
+        <AnimatePresence mode="wait">
+          {appState === "ig-profile" && igProfile && (
+            <InstagramProfileArea
+              profileData={igProfile}
+              onReset={handleReset}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Stats bar */}
         {appState === "idle" && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -507,6 +410,7 @@ export default function Index() {
         )}
       </main>
 
+      {/* ── SEO section ── */}
       <section className="seo-section" aria-labelledby="how-to-heading">
         <div className="seo-inner">
           <div className="seo-block">
@@ -514,8 +418,7 @@ export default function Index() {
             <p className="seo-desc">
               Our free Instagram Reels downloader lets you save any public Reel in HD quality — no watermark, no account needed.
             </p>
-            
-            {/* Instagram Feature Image - 600x400 px */}
+
             {!featureError && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -563,7 +466,6 @@ export default function Index() {
               Use our free YouTube video downloader to save any YouTube video in MP4 format up to 4K, or extract audio as MP3.
             </p>
 
-            {/* YouTube Feature Image - 600x400 px */}
             {!featureError && (
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
@@ -616,9 +518,9 @@ export default function Index() {
                 <ul>
                   <li>Reels (HD, no watermark)</li>
                   <li>Stories &amp; Highlights</li>
-                  <li>Posts &amp; Carousels</li>
+                  <li>Posts, Carousels &amp; Photos</li>
                   <li>IGTV Videos</li>
-                  <li>Profile Videos</li>
+                  <li>Public Profile Posts</li>
                 </ul>
               </div>
               <div className="seo-format-card">
@@ -646,16 +548,16 @@ export default function Index() {
                 <p className="faq-answer">Yes. All Instagram Reels downloaded through our tool are completely watermark-free.</p>
               </details>
               <details className="faq-item">
+                <summary className="faq-question">Can I download entire Instagram Stories or profile posts?</summary>
+                <p className="faq-answer">Yes. Paste a profile URL (e.g. instagram.com/username) or a stories URL to fetch all current stories or recent posts in one go.</p>
+              </details>
+              <details className="faq-item">
                 <summary className="faq-question">What YouTube video quality can I download?</summary>
                 <p className="faq-answer">Our YouTube downloader supports resolutions up to 4K (2160p), including 1080p Full HD, 720p HD, and lower resolutions for smaller file sizes.</p>
               </details>
               <details className="faq-item">
                 <summary className="faq-question">Do I need to install any software or app?</summary>
                 <p className="faq-answer">No. FreeReelsDownloader works entirely in your browser on iPhone, Android, PC, and Mac.</p>
-              </details>
-              <details className="faq-item">
-                <summary className="faq-question">Is my data safe when using this downloader?</summary>
-                <p className="faq-answer">Completely. We do not store any video content or personal information. Downloads go directly to your device.</p>
               </details>
               <details className="faq-item">
                 <summary className="faq-question">Can I download private Instagram videos?</summary>
@@ -666,6 +568,7 @@ export default function Index() {
         </div>
       </section>
 
+      {/* ── Legal section ── */}
       <section className="legal-section" aria-labelledby="legal-heading">
         <div className="legal-inner">
           <h2 id="legal-heading" className="legal-title">
@@ -700,6 +603,7 @@ export default function Index() {
         </div>
       </section>
 
+      {/* ── Footer ── */}
       <footer className="page-footer">
         <span>© {new Date().getFullYear()} FreeReelsDownloader</span>
         <span className="footer-sep" />

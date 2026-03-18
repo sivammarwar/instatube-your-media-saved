@@ -10,9 +10,37 @@ interface InputStageProps {
 }
 
 function detectPlatform(url: string): Platform {
-  if (/instagram\.com\/(p|reel|stories|tv)\//i.test(url)) return "instagram";
-  // Added /shorts/ support
+  // YouTube: standard watch, shorts, youtu.be
   if (/youtu\.be\/|youtube\.com\/(watch|shorts)\//i.test(url)) return "youtube";
+
+  // Instagram: single post, reel, tv, stories (single item), stories batch,
+  // highlights, and public profile pages
+  if (
+    /instagram\.com\/(p|reel|tv)\//i.test(url) ||              // post / reel / igtv
+    /instagram\.com\/stories\/[^/?#]+/i.test(url) ||           // story item or batch
+    /instagram\.com\/highlights\/\d+/i.test(url) ||            // highlight
+    /instagram\.com\/s\//i.test(url) ||                        // story share link
+    /instagram\.com\/[^/?#]+\/?(\?.*)?$/i.test(url)            // profile page
+  ) return "instagram";
+
+  return null;
+}
+
+/**
+ * Infer the Instagram content type from the URL so callers can route
+ * to /api/instagram-profile with the correct ?type= param.
+ */
+function detectInstagramType(
+  url: string,
+): "post" | "reel" | "story" | "stories_batch" | "highlight" | "profile" | null {
+  if (/instagram\.com\/stories\/[^/?#]+\/\d+/i.test(url)) return "story";
+  if (/instagram\.com\/stories\/[^/?#]+\/?(\?.*)?$/i.test(url)) return "stories_batch";
+  if (/instagram\.com\/s\//i.test(url)) return "story";
+  if (/instagram\.com\/highlights\/\d+/i.test(url)) return "highlight";
+  if (/instagram\.com\/reel\//i.test(url)) return "reel";
+  if (/instagram\.com\/(p|tv)\//i.test(url)) return "post";
+  // Must be last — least specific
+  if (/instagram\.com\/[^/?#]+\/?(\?.*)?$/i.test(url)) return "profile";
   return null;
 }
 
@@ -133,7 +161,7 @@ const InputStage = ({ onSubmit, isLoading, error }: InputStageProps) => {
             exit={{ opacity: 0 }}
             className="input-hint"
           >
-            ↑ paste link above · supports public videos, reels &amp; posts
+            ↑ paste link above · supports public videos, reels, posts &amp; profiles
           </motion.p>
         )}
       </AnimatePresence>
@@ -164,5 +192,5 @@ const InputStage = ({ onSubmit, isLoading, error }: InputStageProps) => {
 };
 
 export default InputStage;
-export { detectPlatform };
+export { detectPlatform, detectInstagramType };
 export type { Platform };

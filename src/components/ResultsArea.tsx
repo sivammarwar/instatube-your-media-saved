@@ -5,25 +5,29 @@ import type { VideoData, VideoResource, ProgressCallback } from "@/lib/api";
 import { downloadVideoWithAudio, downloadDirect } from "@/lib/api";
 
 // ─────────────────────────────────────────────────────────
-// Types
+// DownloadState — exported so DownloadEngine.tsx can import it
+// Accepts all phases from both DownloadEngine ("merging") and
+// internal self-managed downloads ("downloading").
 // ─────────────────────────────────────────────────────────
-interface DownloadState {
+export interface DownloadState {
   loading:    boolean;
-  progress?:  number;        // 0–100, undefined = indeterminate
-  received?:  number;        // bytes received so far
-  total?:     number | null; // total bytes (null = unknown / chunked)
-  phase?:     "preparing" | "downloading" | "saving";
+  progress?:  number;
+  received?:  number;
+  total?:     number | null;
+  phase?:     "preparing" | "downloading" | "merging" | "saving";
   startedAt?: number;
-  speedBps?:  number;        // rolling bytes/sec
+  speedBps?:  number;
 }
 
 interface ResultsAreaProps {
   platform:    Platform;
   videoData:   VideoData;
-  onDownload?: (item: VideoResource & { type: "video" | "audio" }, label: string) => void;
   onReset:     () => void;
-  downloading?: Record<string, DownloadState | boolean>;
   pageUrl:     string;
+  // ── Optional: provided by DownloadEngine on SEO pages ──
+  // When omitted, ResultsArea manages downloads internally (Index.tsx).
+  onDownload?: (item: VideoResource & { type: "video" | "audio" }, label: string) => void;
+  downloading?: Record<string, DownloadState | boolean>;
 }
 
 const transition = { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const };
@@ -36,19 +40,16 @@ function formatSize(mb: number): string {
   if (mb < 1) return `${(mb * 1024).toFixed(0)} KB`;
   return `${mb.toFixed(1)} MB`;
 }
-
 function formatBytes(bytes: number): string {
-  if (bytes < 1024)          return `${bytes} B`;
-  if (bytes < 1024 * 1024)   return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024)        return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
-
 function formatSpeed(bps: number): string {
-  if (bps <= 0)              return "";
-  if (bps < 1024 * 1024)    return `${(bps / 1024).toFixed(0)} KB/s`;
+  if (bps <= 0)           return "";
+  if (bps < 1024 * 1024)  return `${(bps / 1024).toFixed(0)} KB/s`;
   return `${(bps / (1024 * 1024)).toFixed(1)} MB/s`;
 }
-
 function formatEta(received: number, total: number, startedAt: number): string {
   const elapsed = (Date.now() - startedAt) / 1000;
   if (elapsed < 1 || received <= 0) return "";
@@ -92,7 +93,7 @@ const Spinner = () => (
 );
 
 // ─────────────────────────────────────────────────────────
-// Progress Bar — shows real bytes, speed, ETA
+// Progress Bar
 // ─────────────────────────────────────────────────────────
 interface ProgressBarProps {
   state:   DownloadState;
@@ -106,6 +107,7 @@ function ProgressBar({ state, isAudio }: ProgressBarProps) {
 
   const phaseLabel =
     phase === "preparing"   ? "Preparing…"   :
+    phase === "merging"     ? "Merging…"     :
     phase === "downloading" ? "Downloading…" :
     phase === "saving"      ? "Saving…"      : "Downloading…";
 
@@ -120,8 +122,6 @@ function ProgressBar({ state, isAudio }: ProgressBarProps) {
 
   return (
     <div className="dl-progress-wrap" aria-label={`${phaseLabel} ${isIndeterminate ? "" : `${pct}%`}`}>
-
-      {/* Top row: phase label + speed + ETA + % */}
       <div className="dl-progress-header">
         <span className="dl-progress-phase">{phaseLabel}</span>
         <span className="dl-progress-right">
@@ -131,7 +131,6 @@ function ProgressBar({ state, isAudio }: ProgressBarProps) {
         </span>
       </div>
 
-      {/* Track */}
       <div
         className="dl-progress-track"
         role="progressbar"
@@ -151,7 +150,6 @@ function ProgressBar({ state, isAudio }: ProgressBarProps) {
         )}
       </div>
 
-      {/* Bottom row: bytes received / total */}
       {sizeInfo && (
         <div className="dl-progress-size-row">
           <span className="dl-progress-size-info">{sizeInfo}</span>
@@ -162,6 +160,16 @@ function ProgressBar({ state, isAudio }: ProgressBarProps) {
 }
 
 // ─────────────────────────────────────────────────────────
+// Normalise downloading entry — DownloadEngine passes booleans
+// or full DownloadState objects; we always want DownloadState.
+// ─────────────────────────────────────────────────────────
+function normaliseState(raw: DownloadState | boolean | undefined): DownloadState {
+  if (!raw) return { loading: false };
+  if (typeof raw === "boolean") return { loading: raw };
+  return raw;
+}
+
+// ─────────────────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────────────────
 const ResultsArea = ({
@@ -169,13 +177,16 @@ const ResultsArea = ({
   videoData,
   onReset,
   pageUrl,
+  onDownload,
+  downloading: externalDownloading,
 }: ResultsAreaProps) => {
   const { videos, audios, thumbnail, title } = videoData;
   const [thumbError,       setThumbError]       = React.useState(false);
-  const [downloadingState, setDownloadingState] = React.useState<Record<string, DownloadState>>({});
+  // Internal download state — used when onDownload prop is NOT provided (Index.tsx)
+  const [internalState, setInternalState] = React.useState<Record<string, DownloadState>>({});
 
   React.useEffect(() => {
-    if (!pageUrl) console.warn('[ResultsArea] ⚠️ pageUrl is empty!');
+    if (!pageUrl) console.warn("[ResultsArea] ⚠️ pageUrl is empty!");
   }, [pageUrl]);
 
   const allItems: Array<VideoResource & { type: "video" | "audio"; _key: string; _index: number }> = [
@@ -183,29 +194,27 @@ const ResultsArea = ({
     ...audios.map((a, i) => ({ ...a, type: "audio" as const, _key: `audio-${a.quality || a.format || i}-${i}`, _index: videos.length + i })),
   ];
 
-  // Stable patch helper — avoids replacing full state on each byte
-  const patch = React.useCallback((key: string, update: Partial<DownloadState>) => {
-    setDownloadingState(prev => ({
+  const patchInternal = React.useCallback((key: string, update: Partial<DownloadState>) => {
+    setInternalState(prev => ({
       ...prev,
       [key]: { ...(prev[key] ?? { loading: true }), ...update },
     }));
   }, []);
 
-  const clearKey = React.useCallback((key: string) => {
-    setDownloadingState(prev => { const s = { ...prev }; delete s[key]; return s; });
+  const clearInternal = React.useCallback((key: string) => {
+    setInternalState(prev => { const s = { ...prev }; delete s[key]; return s; });
   }, []);
 
-  // ── handleDownload ──────────────────────────────────────
-  const handleDownload = React.useCallback(
+  // ── Internal download handler (used by Index.tsx — no onDownload prop) ──
+  const handleInternalDownload = React.useCallback(
     async (item: VideoResource & { type: "video" | "audio"; _key: string }, label: string) => {
       const key = item._key;
-      if (downloadingState[key]?.loading) return;
-      if (!pageUrl) { alert('Download failed: Page URL is missing. Please go back and try again.'); return; }
+      if (internalState[key]?.loading) return;
+      if (!pageUrl) { alert("Download failed: Page URL is missing. Please go back and try again."); return; }
 
       const startedAt = Date.now();
-      patch(key, { loading: true, phase: "preparing", progress: undefined, startedAt, received: 0, total: null, speedBps: 0 });
+      patchInternal(key, { loading: true, phase: "preparing", progress: undefined, startedAt, received: 0, total: null, speedBps: 0 });
 
-      // Rolling speed window
       let lastBytes = 0;
       let lastTime  = startedAt;
 
@@ -218,8 +227,8 @@ const ResultsArea = ({
           lastBytes = received;
           lastTime  = now;
         }
-        const progress = (total && total > 0) ? Math.round((received / total) * 100) : undefined;
-        patch(key, { phase: "downloading", received, total, progress, speedBps, startedAt });
+        const progress = total && total > 0 ? Math.round((received / total) * 100) : undefined;
+        patchInternal(key, { phase: "downloading", received, total, progress, speedBps, startedAt });
       };
 
       try {
@@ -227,43 +236,54 @@ const ResultsArea = ({
 
         if (item.type === "audio") {
           result = await downloadDirect(pageUrl, title || "audio", undefined, "audio", onProgress);
-
         } else {
           const matchingAudio = audios.length > 0 ? audios[0] : null;
-
           if (matchingAudio?.url && item.url) {
-            // Method A — ffmpeg streams directly, Content-Length unknown → indeterminate bar
-            // but bytes still accumulate so user sees live KB counter
             result = await downloadVideoWithAudio(
               item.url, matchingAudio.url, title || "video",
-              platform ?? undefined, onProgress
+              platform ?? undefined, onProgress,
             );
           } else {
-            // Method B — yt-dlp, Content-Length known → real % bar
-            const quality = item.quality?.replace('p', '') || undefined;
+            const quality = item.quality?.replace("p", "") || undefined;
             result = await downloadDirect(pageUrl, title || "video", quality, "video", onProgress);
           }
         }
 
         if (result.success) {
-          patch(key, { loading: false, phase: "saving", progress: 100 });
-          setTimeout(() => clearKey(key), 2500);
+          patchInternal(key, { loading: false, phase: "saving", progress: 100 });
+          setTimeout(() => clearInternal(key), 2500);
         } else {
-          clearKey(key);
-          alert(`Download failed: ${result.error || 'Unknown error'}`);
+          clearInternal(key);
+          alert(`Download failed: ${result.error || "Unknown error"}`);
         }
-
       } catch (err) {
-        clearKey(key);
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        if (msg !== 'Download cancelled.') alert(`Download failed: ${msg}`);
+        clearInternal(key);
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        if (msg !== "Download cancelled.") alert(`Download failed: ${msg}`);
       }
     },
-    [pageUrl, title, audios, platform, downloadingState, patch, clearKey]
+    [pageUrl, title, audios, platform, internalState, patchInternal, clearInternal],
   );
 
-  function getState(key: string): DownloadState {
-    return downloadingState[key] ?? { loading: false };
+  // ── Resolve download state for a given key ──
+  // External (DownloadEngine) uses item.url as key; internal uses item._key.
+  function getState(item: VideoResource & { type: "video" | "audio"; _key: string }): DownloadState {
+    if (externalDownloading) {
+      // DownloadEngine keys by item.url
+      return normaliseState(externalDownloading[item.url]);
+    }
+    return internalState[item._key] ?? { loading: false };
+  }
+
+  // ── Unified click handler ──
+  function handleClick(item: VideoResource & { type: "video" | "audio"; _key: string }, label: string) {
+    if (onDownload) {
+      // Delegate to DownloadEngine's handler (SEO pages)
+      onDownload({ ...item }, label);
+    } else {
+      // Self-managed (Index.tsx main page)
+      handleInternalDownload(item, label);
+    }
   }
 
   return (
@@ -306,11 +326,13 @@ const ResultsArea = ({
         <div className="results-list">
           {allItems.map((item) => {
             const isAudio   = item.type === "audio";
-            const state     = getState(item._key);
+            const state     = getState(item);
             const isLoading = state.loading;
             const isDone    = !isLoading && state.phase === "saving";
-            const label     = isAudio ? `Audio · ${item.format?.toUpperCase() || "MP3"}` : `${item.quality || item.format || "Video"}`;
-            const size      = formatSize(item.sizeMB ?? 0);
+            const label     = isAudio
+              ? `Audio · ${item.format?.toUpperCase() || "MP3"}`
+              : `${item.quality || item.format || "Video"}`;
+            const size = formatSize(item.sizeMB ?? 0);
 
             return (
               <motion.div
@@ -320,7 +342,7 @@ const ResultsArea = ({
                 className={`result-row ${isAudio ? "result-row-audio" : "result-row-video"} ${isLoading ? "result-row-loading" : ""}`}
               >
                 <button
-                  onClick={() => handleDownload(item, label)}
+                  onClick={() => handleClick(item, label)}
                   disabled={isLoading}
                   aria-busy={isLoading}
                   aria-label={isLoading ? `Downloading ${label}…` : `Download ${label}${size ? ` (${size})` : ""}`}
@@ -347,9 +369,9 @@ const ResultsArea = ({
                   </span>
                 </button>
 
-                {/* Live progress bar */}
+                {/* Live progress bar — only shown for internal downloads */}
                 <AnimatePresence>
-                  {isLoading && (
+                  {isLoading && !onDownload && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
