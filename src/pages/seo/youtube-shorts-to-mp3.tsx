@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet";
 import { useState } from "react";
-import DownloadEngine from "@/components/DownloadEngine";
+import DownloadEngine from "@/components/Downloadengine";
 
 const features = [
   { icon: "⚡", label: "Instant",    desc: "Shorts processed in under 5 seconds"     },

@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet";
 import { useState } from "react";
-import DownloadEngine from "@/components/DownloadEngine";
+import DownloadEngine from "@/components/Downloadengine";
 
 const bitrates = [
   { kbps: "320", label: "320kbps", quality: "Studio Quality", stars: 5, size: "~2.4 MB/min", color: "#facc15" },

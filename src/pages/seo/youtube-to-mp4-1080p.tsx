@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet";
 import { useState } from "react";
-import DownloadEngine from "@/components/DownloadEngine";
+import DownloadEngine from "@/components/Downloadengine";
 
 const specs = [
   { label: "Video Codec",    value: "H.264 / H.265 (HEVC)" },

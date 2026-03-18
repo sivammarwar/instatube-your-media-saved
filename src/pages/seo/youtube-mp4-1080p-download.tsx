@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet";
 import { useState } from "react";
-import DownloadEngine from "@/components/DownloadEngine";
+import DownloadEngine from "@/components/Downloadengine";
 
 const qualities = [
   { label: "4K Ultra HD", res: "3840×2160", bitrate: "35–68 Mbps", size: "~2.5 GB/hr", badge: "BEST", color: "#facc15" },
