@@ -336,28 +336,25 @@ export default function Index() {
           />
         </div>
 
-        {/* Hero image (responsive) — only shown on idle/loading, not when results are visible */}
-        <AnimatePresence>
-          {!heroError && appState === "idle" && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="hero-image-wrapper fade-up fade-up-1"
-            >
-              <picture>
-                <source media="(min-width: 481px)" srcSet="/hero-banner_desktop.png" />
-                <img
-                  src="/hero-banner_mobile.png"
-                  alt="Download Instagram Reels and YouTube Videos Free"
-                  className="hero-image"
-                  onError={() => setHeroError(true)}
-                />
-              </picture>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Hero image (responsive) — always visible */}
+        {!heroError && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="hero-image-wrapper fade-up fade-up-1"
+          >
+            <picture>
+              <source media="(min-width: 481px)" srcSet="/hero-banner_desktop.png" />
+              <img
+                src="/hero-banner_mobile.png"
+                alt="Download Instagram Reels and YouTube Videos Free"
+                className="hero-image"
+                onError={() => setHeroError(true)}
+              />
+            </picture>
+          </motion.div>
+        )}
 
         {/* ── Results: YouTube / single IG item ── */}
         <AnimatePresence mode="wait">
