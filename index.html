@@ -9,16 +9,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
     <!-- ── Async font load — does NOT block rendering ── -->
-    <!-- FIX: display=optional instead of display=swap -->
-    <!-- display=optional tells browser: use custom font only if it loads instantly -->
-    <!-- otherwise use system font permanently — eliminates CLS from font swap -->
     <link
       href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=optional"
       rel="stylesheet"
       media="print"
       onload="this.media='all'"
     />
-    <!-- Fallback for JS-disabled browsers -->
     <noscript>
       <link
         href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=optional"
@@ -26,57 +22,41 @@
       />
     </noscript>
 
-    <!-- ── Primary SEO ── -->
-    <title>FreeReelsDownloader — Download Instagram Reels & YouTube Videos Free</title>
-    <meta name="description" content="Download Instagram Reels, Stories, Posts and YouTube videos instantly for free. No login, no watermark, HD quality. The fastest free reels downloader online." />
-    <meta name="keywords" content="free reels downloader, instagram reels downloader, download reels free, save instagram reels, youtube video downloader, download reels online, instagram video downloader, reels downloader no watermark, free video downloader" />
-    <meta name="author" content="FreeReelsDownloader" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://freereelsdownloader.com" />
-
-    <!-- ── Open Graph ── -->
-    <meta property="og:title" content="FreeReelsDownloader — Download Instagram Reels & YouTube Videos Free" />
-    <meta property="og:description" content="Download Instagram Reels, Stories and YouTube videos instantly. Free, fast, no login, no watermark." />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://freereelsdownloader.com" />
-    <meta property="og:image" content="https://freereelsdownloader.com/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:site_name" content="FreeReelsDownloader" />
-    <meta property="og:locale" content="en_US" />
-
-    <!-- ── Twitter Card ── -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@FreeReelsDL" />
-    <meta name="twitter:creator" content="@FreeReelsDL" />
-    <meta name="twitter:title" content="FreeReelsDownloader — Download Instagram Reels & YouTube Videos Free" />
-    <meta name="twitter:description" content="Download Instagram Reels, Stories and YouTube videos instantly. Free, fast, no login, no watermark." />
-    <meta name="twitter:image" content="https://freereelsdownloader.com/og-image.png" />
-
-    <!-- ── Favicon ── -->
+    <!-- ── Favicon (static — same on every page) ── -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#060810" />
+    <meta name="author" content="FreeReelsDownloader" />
 
-    <!-- ── Schema.org Structured Data ── -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "FreeReelsDownloader",
-      "url": "https://freereelsdownloader.com",
-      "description": "Download Instagram Reels, Stories, Posts and YouTube videos instantly. Free, fast, no login required.",
-      "applicationCategory": "UtilitiesApplication",
-      "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
-    }
-    </script>
+    <!-- ── Fallback title — react-helmet overrides this on every page ── -->
+    <title>FreeReelsDownloader — Download Instagram Reels &amp; YouTube Videos Free</title>
+
+    <!--
+      ════════════════════════════════════════════════════════════════
+      IMPORTANT: All per-page tags are set via react-helmet in each
+      page component. Do NOT add them here — duplicates break SEO.
+
+      Each page component must include via <Helmet>:
+        - <title>
+        - <meta name="description">
+        - <meta name="keywords">
+        - <meta name="robots">
+        - <link rel="canonical">
+        - <meta property="og:title">
+        - <meta property="og:description">
+        - <meta property="og:url">
+        - <meta property="og:image">
+        - <meta property="og:type">
+        - <meta property="og:site_name">
+        - <meta name="twitter:card">
+        - <meta name="twitter:title">
+        - <meta name="twitter:description">
+        - <meta name="twitter:image">
+        - <script type="application/ld+json"> (schema)
+      ════════════════════════════════════════════════════════════════
+    -->
   </head>
 
   <body>
