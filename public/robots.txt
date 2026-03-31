@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /api/
 
-Sitemap: https://freereelsdownloader.com/sitemap.xml
+Sitemap: https://www.freereelsdownloader.com/sitemap.xml
